@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const cors = require('cors')
+const history = require('connect-history-api-fallback');
 
 var app = express();
 
@@ -32,17 +33,23 @@ app.use(passport.session());
 // Passport Strategies
 const strategies = require('./strategies')(passport);
 
-app.get('/', (req, res, next) => {
-    res.send({ status: 'OK', msg: 'Node.js engine is working.' });
-    next();
-})
 
 // Routes
 const router = new express.Router();
-router.use("/auth", require("./routes/auth"));
-router.use("/user", require('./routes/user'));
+router.use('/api', require('./routes/api'));
 app.use(router);
 
+// Middleware for serving '/dist' directory
+const staticFileMiddleware = express.static('./client/dist');
+
+// 1st call for unredirected requests 
+app.use(staticFileMiddleware);
+
+// Support history api 
+app.use(history());
+
+// 2nd call for redirected requests
+app.use(staticFileMiddleware);
 
 // Database Configurations
 mongoose.connect(config.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
