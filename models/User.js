@@ -4,7 +4,8 @@ const Joi = require('joi');
 
 var UserSchema = new mongoose.Schema({
     email: { type: String, required: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }]
 });
 
 // Auto Timestamp for createdAt, updatedAt
