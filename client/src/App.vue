@@ -15,9 +15,4 @@ body,
 #app {
   height: 100%;
 }
-
-body {
-  background-image: url('~@/assets/images/background.jpg');
-  background-size: cover !important;
-}
 </style>
