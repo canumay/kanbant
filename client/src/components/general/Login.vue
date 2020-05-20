@@ -3,15 +3,17 @@
     <b-row class="h-100">
       <b-col class="d-flex justify-content-center align-items-center">
         <b-col class="col-12 col-lg-4" style="padding:0;">
-          <b-card class="w-100" style="height:60vh;">
-            <div class="logo p-3 text-center" style="margin-bottom: 20px;">
+          <b-card class="w-100" style="height:55vh;">
+            <div class="logo p-3 text-center">
               <img src="~@/assets/images/logo.png" style="height: 100px; border-radius: 10px;" />
             </div>
             <b-form @submit="onSubmit" @reset="onReset" v-if="show">
-              <b-form-group label="Email address:">
+              <b-form-group class="has-icon" label="Email address:">
+                <span class="fa fa-envelope form-control-feedback"></span>
                 <b-form-input v-model="form.email" type="email" required placeholder="Enter email"></b-form-input>
               </b-form-group>
-              <b-form-group label="Password:">
+              <b-form-group class="has-icon" label="Password:">
+                <span class="fa fa-key form-control-feedback"></span>
                 <b-form-input
                   v-model="form.password"
                   type="password"
@@ -27,8 +29,8 @@
           </b-card>
         </b-col>
         <b-col class="d-none d-lg-block col-lg-8" style="padding:0;">
-          <b-card class="w-100" style="height:60vh;background-color: #212529a6;">
-            <img src="~@/assets/svg/todo.svg" class="todo-img" />
+          <b-card class="w-100" style="height:55vh;background-color: #17a2b869;">
+            <img src="~@/assets/svg/login.svg" class="todo-img" />
           </b-card>
         </b-col>
       </b-col>
@@ -70,13 +72,24 @@ export default {
 </script>
 <style scoped>
 .todo-img {
-  width: 100%;
-  position: absolute;
-  right: -50px;
-  bottom: -30px;
+  height: 100%;
 }
 .login-buttons {
   width: 100%;
   margin-top: 5%;
+}
+.has-icon .form-control {
+  padding-left: 2.375rem;
+}
+.has-icon .form-control-feedback {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  width: 2.375rem;
+  height: 2.375rem;
+  line-height: 2.375rem;
+  text-align: center;
+  pointer-events: none;
+  color: #aaa;
 }
 </style>
