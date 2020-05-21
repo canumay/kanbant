@@ -52,7 +52,7 @@ app.use(history());
 app.use(staticFileMiddleware);
 
 // Database Configurations
-mongoose.connect(config.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(config.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     .catch(err => {
         console.log(`${emoji.get(':x:')} Error connecting to MongoDB.\n${emoji.get(':envelope:')}  Error Message: ${err.message}`);
     })
