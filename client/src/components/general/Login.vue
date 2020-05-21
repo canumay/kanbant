@@ -8,7 +8,7 @@
               <div class="logo p-3 text-center">
                 <img src="~@/assets/images/logo.png" style="height: 100px;" />
               </div>
-              <b-form @submit="onSubmit" @reset="onReset" v-if="show">
+              <b-form>
                 <b-form-group class="has-icon" label="Email address:">
                   <span class="fa fa-envelope form-control-feedback"></span>
                   <b-form-input
@@ -27,8 +27,20 @@
                     placeholder="Enter password"
                   ></b-form-input>
                 </b-form-group>
+                <b-alert
+                  variant="danger"
+                  v-show="isError"
+                  show
+                  fade
+                  style="font-size:15px; padding: 10px;"
+                >{{error_message}}</b-alert>
                 <b-form-group>
-                  <b-button type="submit" variant="success" class="login-buttons">Login</b-button>
+                  <b-button
+                    type="submit"
+                    variant="success"
+                    class="login-buttons"
+                    @click.prevent="login"
+                  >Login</b-button>
                   <b-button type="submit" variant="primary" class="login-buttons">Register</b-button>
                 </b-form-group>
               </b-form>
@@ -53,26 +65,25 @@ export default {
         email: "",
         password: ""
       },
-      show: true
+      isError: false,
+      error_message: ""
     };
   },
   methods: {
-    onSubmit(evt) {
-      evt.preventDefault();
-      alert(JSON.stringify(this.form));
-    },
-    onReset(evt) {
-      evt.preventDefault();
-      // Reset our form values
-      this.form.email = "";
-      this.form.name = "";
-      this.form.food = null;
-      this.form.checked = [];
-      // Trick to reset/clear native browser form validation state
-      this.show = false;
-      this.$nextTick(() => {
-        this.show = true;
-      });
+    login() {
+      this.$http
+        .post("/auth/local", this.form)
+        .then(res => {
+          this.isError = false;
+          this.error_message = "";
+          if (res.data.message === "OK") {
+            this.$router.push({ path: "/dashboard" });
+          }
+        })
+        .catch(err => {
+          this.isError = true;
+          this.error_message = err.response.data.message;
+        });
     }
   }
 };
