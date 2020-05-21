@@ -6,9 +6,19 @@ const passport = require('passport');
 
 // Local Login
 router.post('/local', (req, res, next) => {
-    passport.authenticate('local', {
-        successRedirect: '/auth/secret',
-        // failureRedirect: '/auth',
+    passport.authenticate('local', (err, user, info) => {
+        if (err) { return next(err); } //error exception
+
+        // user will be set to false, if not authenticated
+        if (!user) {
+            res.status(401).json(info); //info contains the error message
+        } else {
+            // if user authenticated maintain the session
+            req.logIn(user, function () {
+                // do whatever here on successful login
+                res.status(200).json({ message: "OK" });
+            })
+        }
     })(req, res, next);
 });
 
@@ -32,4 +42,14 @@ router.post('/register', async (req, res, next) => {
         res.status(400).json({ status: false, message: err });
     }
 })
+
+router.get('/isauth', async (req, res, next) => {
+    if (req.user) {
+        res.status(200).json({ status: true });
+    } else {
+        res.status(200).json({ status: false });
+        // req.redirect('/login');
+    }
+})
+
 module.exports = router;
