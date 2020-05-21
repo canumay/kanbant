@@ -37,7 +37,7 @@ router.get('/projects', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.project_id) { // If user specified project id
             if (mongoose.Types.ObjectId.isValid(req.query.project_id)) { // Check project id is valid
-                let project = await Project.findById(req.query.project_id, { __v: 0 }).populate('columns').exec(); // Get project and populate columns
+                let project = await Project.findById(req.query.project_id, { __v: 0 }).populate({path: 'columns', populate: {path: 'tasks', model: 'Task'}}).exec(); // Get project and populate columns
                 if (project === null) { // If project not found, throw error
                     res.status(404).json({ status: false, message: "Project is not exists." });
                 } else { // If project found, send it
