@@ -18,7 +18,8 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 app.use(cors({
-    origin: "http://localhost:8080"
+    origin: "http://localhost:8080",
+    credentials: true
 }));
 app.use(session({
     secret: 'kanbantReallySecretKey',
