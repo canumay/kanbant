@@ -2,16 +2,20 @@
   <div class="background-template h-100">
     <Navbar />
     <div style="height: 40px; margin-bottom: 15px;">
-      <h2 class="text-white ml-4 mt-2">Project: Test Project</h2>
+      <h2 class="text-white ml-4 mt-2">Project: {{project_details.title}}</h2>
     </div>
 
     <PerfectScrollbar class="scroll-area">
       <b-container style="max-width: none !important;">
         <b-row>
           <b-col class="d-flex">
-            <b-col class="col kanban-widget" v-for="(column, index) in columns" :key="index">
+            <b-col
+              class="col kanban-widget"
+              v-for="(column, index) in project_details.columns"
+              :key="index"
+            >
               <b-card
-                :title="column.name"
+                :title="column.title"
                 tag="article"
                 class="mb-2 widget-img kanban-widget text-center p-2"
                 style="background-color: rgb(241, 241, 241);"
@@ -26,18 +30,22 @@
                   @change="log"
                 >
                   <b-card
-                    :title="getTaskName(element.name)"
+                    :title="getTaskName(element.title)"
                     class="mb-2 text-left task"
                     :style="getTaskHeight(element)"
                     v-for="(element) in column.tasks"
-                    :key="element.name"
+                    :key="element.title"
                   >
-                    <p v-if="element.expireDate">
+                    <p v-if="element.expireAt">
                       <i class="fa fa-clock" />
-                      {{element.expireDate}}
+                      {{element.expireAt | moment('MMMM D')}}
                     </p>
-                    <span :class="`badge badge-${element.labelType}`" v-if="element.labelType">
-                      <i class="fas fa-bookmark" />
+                    <span
+                      :class="`badge badge-${element.labelType}`"
+                      style="text-transform:capitalize; font-size: 0.635rem"
+                      v-if="element.labelType"
+                    >
+                      <i class="fas fa-circle" />
                       {{element.label}}
                     </span>
                   </b-card>
@@ -64,58 +72,17 @@ export default {
     draggable,
     PerfectScrollbar
   },
+  watch: {
+    project_details: {
+      handler: (val) => {
+        console.log(val);
+      },
+      deep: true
+    }
+  },
   data() {
     return {
-      columns: [
-        {
-          name: "To-Do",
-          icon: "todo",
-          tasks: [
-            {
-              name: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-              expireDate: "May 20",
-              label: "Feature Request",
-              labelType: "primary"
-            },
-            {
-              name: "Add discount code to checkout page",
-              label: "Feature Request",
-              labelType: "danger"
-            },
-            { name: "Provide documentation on integrations" },
-            { name: "Design shopping cart dropdown" }
-          ]
-        },
-        {
-          name: "In Progress",
-          icon: "inprogress",
-          tasks: [
-            {
-              name: "Fix that bug",
-              expireDate: "May 29",
-              label: "Bug",
-              labelType: "danger"
-            }
-          ]
-        },
-        {
-          name: "Done",
-          icon: "done",
-          tasks: [
-            {
-              name: "Consectetur adipiscing elit.",
-              expireDate: "May 22",
-              label: "Design",
-              labelType: "info"
-            },
-            {
-              name: "Code to checkout page",
-              label: "Fix",
-              labelType: "warning"
-            }
-          ]
-        }
-      ]
+      project_details: { title: "", description: "", columns: [] }
     };
   },
   methods: {
@@ -127,7 +94,7 @@ export default {
     },
     getTaskHeight(element) {
       if (element.date || element.label) {
-        return "height: 105px";
+        return "height: 90px";
       } else {
         return "height: 80px";
       }
@@ -135,20 +102,19 @@ export default {
     scrollHandle(evt) {
       console.log(evt);
     },
-    add: function() {
-      this.list.push({ name: "Juan" });
-    },
-    replace: function() {
-      this.list = [{ name: "Edgard" }];
-    },
-    clone: function(el) {
-      return {
-        name: el.name + " cloned"
-      };
-    },
     log: function(evt) {
       window.console.log(evt);
     }
+  },
+  created() {
+    this.$http
+      .get("/user/projects", {
+        params: { project_id: "5ec650aa9e0c776338d13f0c" }
+      })
+      .then(response => {
+        console.log(response.data);
+        this.project_details = response.data.result;
+      });
   }
 };
 </script>
