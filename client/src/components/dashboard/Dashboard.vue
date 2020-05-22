@@ -1,11 +1,54 @@
 <template>
-  <div class="background-template h-100">
+  <div class="h-100" :class="getBackgroundCustomization">
     <Navbar />
+    <b-sidebar
+      id="sidebar-1"
+      title="Customization"
+      :bg-variant="getSidebarBGVariant"
+      :text-variant="getSidebarTextVariant"
+      backdrop
+      shadow
+      right
+    >
+      <div class="px-3 py-2">
+        <p>Kanbant provides lots of customizations. You can customize the appearance of your dashboard.</p>
+        <hr />
+        <b-form-group label="Theme Mode:">
+          <b-form-radio-group
+            id="radio-group-1"
+            v-model="customization.theme.selected"
+            :options="customization.theme.options"
+          ></b-form-radio-group>
+        </b-form-group>
+      </div>
+    </b-sidebar>
     <div style="height: 40px; margin-bottom: 15px;">
-      <h2 class="text-white ml-4 mt-2">Project: {{project_details.title}}</h2>
+      <multiselect
+        v-model="projects.selected"
+        deselect-label="Can't remove this value"
+        track-by="_id"
+        label="title"
+        placeholder="Select one"
+        class="ml-4 mt-2"
+        style="width: 350px; display: inline-block;"
+        :options="projects.options"
+        :searchable="true"
+        :allow-empty="false"
+        @select="projectSelected"
+      >
+        <template slot="singleLabel" slot-scope="{ option }">
+          Project Name:
+          <strong>{{ option.title }}</strong>
+        </template>
+      </multiselect>
+      <i
+        class="fas fa-cog text-white float-right mr-3 mt-3"
+        style="font-size: 25px;"
+        v-b-toggle.sidebar-1
+      ></i>
     </div>
-
-    <PerfectScrollbar class="scroll-area">
+    <br />
+    <PerfectScrollbar class="scroll-area" v-if="loaded">
       <b-container style="max-width: none !important;">
         <b-row>
           <b-col class="d-flex">
@@ -18,20 +61,24 @@
                 :title="column.title"
                 tag="article"
                 class="mb-2 widget-img kanban-widget text-center p-2"
-                style="background-color: rgb(241, 241, 241);"
+                :class="getColumnCustomization"
+                :style="getColumnStyle"
               >
                 <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
                 <b-img :src="getColumnIcon(column.icon)" />
                 <draggable
                   class="list-group text-left mt-4"
                   :list="column.tasks"
-                  style="cursor:grab;"
+                  style="cursor:move; min-height: 100px;"
                   group="people"
-                  @change="log"
+                  ghost-class="ghost"
+                  @change="changed(column._id, $event)"
+                  :animation="200"
                 >
                   <b-card
                     :title="getTaskName(element.title)"
                     class="mb-2 text-left task"
+                    :class="getTaskCustomization"
                     :style="getTaskHeight(element)"
                     v-for="(element) in column.tasks"
                     :key="element.title"
@@ -65,27 +112,85 @@
 import Navbar from "./Navbar";
 import draggable from "vuedraggable";
 import { PerfectScrollbar } from "vue2-perfect-scrollbar";
-
+import Multiselect from "vue-multiselect";
+// import VueContentLoading from "vue-content-loading"; // TODO: implement this
 export default {
   components: {
     Navbar,
     draggable,
-    PerfectScrollbar
-  },
-  watch: {
-    project_details: {
-      handler: (val) => {
-        console.log(val);
-      },
-      deep: true
-    }
+    PerfectScrollbar,
+    Multiselect
+    // VueContentLoading
   },
   data() {
     return {
-      project_details: { title: "", description: "", columns: [] }
+      project_details: { title: "", description: "", columns: [] },
+      loaded: false,
+      projects: {
+        selected: {},
+        options: []
+      },
+      customization: {
+        theme: {
+          selected: "Dark",
+          options: ["Dark", "Light"]
+        }
+      }
     };
   },
+  computed: {
+    getSidebarBGVariant() {
+      if (this.customization.theme.selected === "Dark") {
+        return "dark";
+      }
+      return "light";
+    },
+    getSidebarTextVariant() {
+      if (this.customization.theme.selected === "Dark") {
+        return "light";
+      }
+      return "dark";
+    },
+    getBackgroundCustomization() {
+      if (this.customization.theme.selected === "Dark") {
+        return "background-template-dark";
+      }
+      return "background-template-light";
+    },
+    getTaskCustomization() {
+      if (this.customization.theme.selected === "Dark") {
+        return "bg-dark text-white";
+      }
+      return "";
+    },
+    getColumnCustomization() {
+      if (this.customization.theme.selected === "Dark") {
+        return "text-white";
+      }
+      return "";
+    },
+    getColumnStyle() {
+      if (this.customization.theme.selected === "Dark") {
+        return "background-color: #1e242b;";
+      }
+      return "background-color: rgb(241, 241, 241);";
+    }
+  },
   methods: {
+    loadProject(project_id) {
+      this.loaded = false;
+      this.$http
+        .get("/user/projects", {
+          params: { project_id }
+        })
+        .then(response => {
+          this.project_details = response.data.result;
+          this.loaded = true;
+        });
+    },
+    projectSelected(selectedOption) {
+      this.loadProject(selectedOption._id);
+    },
     getTaskName(name) {
       return name.length > 60 ? name.slice(0, 60) + "..." : name;
     },
@@ -99,33 +204,69 @@ export default {
         return "height: 80px";
       }
     },
-    scrollHandle(evt) {
-      console.log(evt);
-    },
-    log: function(evt) {
-      window.console.log(evt);
+    changed: function(column_id, evt) {
+      if (evt.added) {
+        let task_id = evt.added.element._id;
+        this.$http
+          .post("/user/addToColumn", { task_id, column_id })
+          .then(res => {
+            console.log(res.data);
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      } else if (evt.removed) {
+        let task_id = evt.removed.element._id;
+        this.$http
+          .post("/user/removeFromColumn", { task_id, column_id })
+          .then(res => {
+            console.log(res.data);
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      } else {
+        console.log("Unknown process.");
+      }
     }
   },
   created() {
-    this.$http
-      .get("/user/projects", {
-        params: { project_id: "5ec650aa9e0c776338d13f0c" }
-      })
-      .then(response => {
-        console.log(response.data);
-        this.project_details = response.data.result;
-      });
+    this.$http.get("/user/projects").then(res => {
+      if (res.data.status && res.data.status === true) {
+        this.projects.options = res.data.results;
+        if (this.projects.options.length > 0) {
+          this.projects.selected = res.data.results[0];
+          this.loadProject(res.data.results[0]._id);
+        }
+      } else {
+        console.log("error occurred fetching projects.");
+      }
+    });
   }
 };
 </script>
 
 <style scoped>
-.background-template {
+.background-template-light {
   background: linear-gradient(
     180deg,
     rgb(50, 43, 167) 0%,
     rgb(69, 69, 175) 53%,
     rgba(0, 212, 255, 1) 100%
+  );
+}
+.background-template-dark {
+  background: linear-gradient(
+    180deg,
+    rgb(0, 0, 0) 0%,
+    rgb(56, 54, 54) 53%,
+    rgb(47, 46, 46) 100%
+  );
+  background: linear-gradient(
+    140deg,
+    #151a1f 4%,
+    rgb(43, 41, 41) 13%,
+    #102225 98%
   );
 }
 .kanban-widget {
@@ -144,8 +285,8 @@ export default {
 }
 .task h4 {
   --text-opacity: 1;
-  color: #4a5568;
-  color: rgba(74, 85, 104, var(--text-opacity));
+  /* color: #4a5568;
+  color: rgba(74, 85, 104, var(--text-opacity)); */
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.025em;
@@ -173,5 +314,10 @@ export default {
 .scroll-area {
   max-height: 80vh;
 }
+ghost {
+  opacity: 0.5;
+  background: #c8ebfb;
+}
 </style>
 <style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
+<style src="vue-multiselect/dist/vue-multiselect.min.css"/>
