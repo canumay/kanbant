@@ -97,7 +97,7 @@
                     </span>
                   </b-card>
                 </draggable>
-                <hr />
+                <hr :style="getHRStyle" />
                 <i class="fa fa-plus"></i>
               </b-card>
             </b-col>
@@ -171,9 +171,15 @@ export default {
     },
     getColumnStyle() {
       if (this.customization.theme.selected === "Dark") {
-        return "background-color: #1e242b;";
+        return "background-color: #1e242b; border: 2px double #ffffff1c;";
       }
       return "background-color: rgb(241, 241, 241);";
+    },
+    getHRStyle() {
+      if (this.customization.theme.selected === "Dark") {
+        return "border-top: 1px solid rgba(255, 255, 255, 0.21)";
+      }
+      return "";
     }
   },
   methods: {
