@@ -37,7 +37,7 @@ router.get('/projects', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.project_id) { // If user specified project id
             if (mongoose.Types.ObjectId.isValid(req.query.project_id)) { // Check project id is valid
-                let project = await Project.findById(req.query.project_id, { __v: 0 }).populate({path: 'columns', populate: {path: 'tasks', model: 'Task'}}).exec(); // Get project and populate columns
+                let project = await Project.findById(req.query.project_id, { __v: 0 }).populate({ path: 'columns', populate: { path: 'tasks', model: 'Task' } }).exec(); // Get project and populate columns
                 if (project === null) { // If project not found, throw error
                     res.status(404).json({ status: false, message: "Project is not exists." });
                 } else { // If project found, send it
@@ -176,6 +176,54 @@ router.post('/tasks', isLoggedIn, async (req, res, next) => {
         res.status(500).json({ status: false, message: err }); // If any error occurs
     }
 });
+
+// Remove existing task from column
+router.post('/removeFromColumn', isLoggedIn, async (req, res, next) => {
+    try {
+        let { column_id, task_id } = req.body;
+        if (column_id &&  mongoose.Types.ObjectId.isValid(column_id)) {
+            if (task_id &&  mongoose.Types.ObjectId.isValid(task_id)) {
+                let column = await Column.findById(column_id);
+                if (column !== null) {
+                    await Column.findByIdAndUpdate(column_id, { "$pull": { "tasks": task_id } }, { "new": true, "upsert": true });
+                    res.status(200).json({ status: true, message: 'Task successfully removed from specified column.' })
+                } else {
+                    res.status(404).json({ status: false, message: 'column not found' })
+                }
+            } else {
+                res.status(400).json({ status: false, message: 'task_id is not specified or malformed' })
+            }
+        } else {
+            res.status(400).json({ status: false, message: 'column_id is not specified or malformed' })
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, message: err }); // If any error occurs
+    }
+})
+
+// Add existing task from column
+router.post('/addToColumn', isLoggedIn, async (req, res, next) => {
+    try {
+        let { column_id, task_id } = req.body;
+        if (column_id &&  mongoose.Types.ObjectId.isValid(column_id)) {
+            if (task_id &&  mongoose.Types.ObjectId.isValid(task_id)) {
+                let column = await Column.findById(column_id);
+                if (column !== null) {
+                    await Column.findByIdAndUpdate(column_id, { "$push": { "tasks": task_id } }, { "new": true, "upsert": true });
+                    res.status(200).json({ status: true, message: 'Task successfully added to specified column.' })
+                } else {
+                    res.status(404).json({ status: false, message: 'column not found' })
+                }
+            } else {
+                res.status(400).json({ status: false, message: 'task_id is not specified or malformed' })
+            }
+        } else {
+            res.status(400).json({ status: false, message: 'column_id is not specified or malformed' })
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, message: err }); // If any error occurs
+    }
+})
 
 
 module.exports = router;
