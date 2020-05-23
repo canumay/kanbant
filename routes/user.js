@@ -108,7 +108,6 @@ router.put('/projects', isLoggedIn, async (req, res, next) => {
     }
 });
 
-
 // Create Columns
 router.post('/columns', isLoggedIn, async (req, res, next) => {
     try {
@@ -125,6 +124,37 @@ router.post('/columns', isLoggedIn, async (req, res, next) => {
             }
         } else {
             res.status(400).json({ status: false, message: "project_id is undefined or malformed." }); // Project id is undefined or malformed
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, message: err }); // If any error occurs
+    }
+});
+
+// Update Column
+router.put('/columns', isLoggedIn, async (req, res, next) => {
+    try {
+        if (req.body.column_id) { // Check user specified column id
+            if (mongoose.Types.ObjectId.isValid(req.body.column_id)) { // Check column id is valid
+                let column = new Column(req.body);
+                await column.joiValidate();
+                let user = User.findById(req.user._id); // Check user exists (not necessary because middleware already checked but its more safer.)
+                if (user === null) { // If user not exists
+                    req.logout(); // Terminates session for security.
+                } else { // If user exists
+                    let column = await Column.findById(req.body.column_id); // Check column exists or not
+                    if (column === null) { // If column is not exists.
+                        res.status(404).json({ status: false, message: "Column is not exists." });
+                    } else { // If column exists
+                        column = await Column.findByIdAndUpdate(req.body.column_id, { $set: req.body }, { new: true });
+                        res.status(200).send({ status: true, message: 'Column successfully updated.' });
+                    }
+                }
+
+            } else { // If column id is malformed
+                res.status(400).json({ status: false, message: "column_id is malformed." });
+            }
+        } else { // If user didn't specified any column id
+            res.status(400).send({ status: false, message: "column_id is required." });
         }
     } catch (err) {
         res.status(500).json({ status: false, message: err }); // If any error occurs

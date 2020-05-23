@@ -35,7 +35,7 @@
         placeholder
         class="ml-4 mt-2"
         style="width: auto; display: inline-block;"
-        selectLabel = ""
+        selectLabel
         :options="projects.options"
         :searchable="true"
         :allow-empty="false"
@@ -49,7 +49,9 @@
           <div class="option__desc">
             <i class="fas fa-tasks" style="margin-right: 10px;"></i>
             <span class="option__title">{{ props.option.title }}</span>
-            <span :class="`badge badge-${props.option.labelType} float-right`">{{props.option.label}}</span>
+            <span
+              :class="`badge badge-${props.option.labelType} float-right`"
+            >{{props.option.label}}</span>
           </div>
         </template>
       </multiselect>
@@ -70,12 +72,25 @@
               :key="index"
             >
               <b-card
-                :title="column.title"
                 tag="article"
                 class="mb-2 widget-img kanban-widget text-center p-2"
                 :class="getColumnCustomization"
                 :style="getColumnStyle"
               >
+                <h4
+                  class="card-title"
+                  @dblclick="editing_component_id = column._id"
+                  v-show="editing_component_id !== column._id"
+                >{{column.title}}</h4>
+                <b-form-input
+                  type="text"
+                  @focusout="updateColumnTitle(column._id, column.title)"
+                  tabindex="0"
+                  v-if="editing_component_id === column._id"
+                  v-model="column.title"
+                  @keyup.enter="editing_component_id = null;"
+                  style="width: auto; margin: auto;"
+                />
                 <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
                 <b-img :src="getColumnIcon(column.icon)" v-show="customization.icons.selected" />
                 <draggable
@@ -136,20 +151,24 @@ export default {
   },
   data() {
     return {
-      project_details: { title: "", description: "", columns: [] },
-      loaded: false,
       projects: {
         selected: {},
         options: []
       },
+      loaded: false,
+      project_details: { title: "", description: "", columns: [] },
+      editing_component_id: "",
       customization: {
         theme: {
           selected: "Dark",
           options: ["Dark", "Light"]
         },
         icons: {
-          selected: {text: "Yes", value: true},
-          options: [{text: "Yes", value: true}, {text: "No", value: false}]
+          selected: { text: "Yes", value: true },
+          options: [
+            { text: "Yes", value: true },
+            { text: "No", value: false }
+          ]
         }
       }
     };
@@ -199,6 +218,17 @@ export default {
     }
   },
   methods: {
+    updateColumnTitle(column_id, title) {
+      this.editing_component_id = null;
+      this.$http
+        .put("/user/columns", { column_id, title })
+        .then(res => {
+          console.log(res.data);
+        })
+        .catch(err => {
+          console.log(err.response);
+        });
+    },
     loadProject(project_id) {
       this.loaded = false;
       this.$http
@@ -208,6 +238,9 @@ export default {
         .then(response => {
           this.project_details = response.data.result;
           this.loaded = true;
+        })
+        .catch(err => {
+          console.log(err.response);
         });
     },
     projectSelected(selectedOption) {
