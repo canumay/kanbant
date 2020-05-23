@@ -15,30 +15,42 @@
         <hr />
         <b-form-group label="Theme Mode:">
           <b-form-radio-group
-            id="radio-group-1"
             v-model="customization.theme.selected"
             :options="customization.theme.options"
           ></b-form-radio-group>
         </b-form-group>
+        <b-form-group label="Show Icons:">
+          <b-form-radio-group
+            v-model="customization.icons.selected"
+            :options="customization.icons.options"
+          ></b-form-radio-group>
+        </b-form-group>
       </div>
     </b-sidebar>
-    <div style="height: 40px; margin-bottom: 15px;">
+    <div style="height: 40px; margin-top: 10px;">
       <multiselect
         v-model="projects.selected"
-        deselect-label="Can't remove this value"
         track-by="_id"
         label="title"
-        placeholder="Select one"
+        placeholder
         class="ml-4 mt-2"
-        style="width: 350px; display: inline-block;"
+        style="width: auto; display: inline-block;"
+        selectLabel = ""
         :options="projects.options"
         :searchable="true"
         :allow-empty="false"
+        :hide-selected="true"
         @select="projectSelected"
       >
         <template slot="singleLabel" slot-scope="{ option }">
-          Project Name:
           <strong>{{ option.title }}</strong>
+        </template>
+        <template slot="option" slot-scope="props">
+          <div class="option__desc">
+            <i class="fas fa-tasks" style="margin-right: 10px;"></i>
+            <span class="option__title">{{ props.option.title }}</span>
+            <span :class="`badge badge-${props.option.labelType} float-right`">{{props.option.label}}</span>
+          </div>
         </template>
       </multiselect>
       <i
@@ -65,7 +77,7 @@
                 :style="getColumnStyle"
               >
                 <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
-                <b-img :src="getColumnIcon(column.icon)" />
+                <b-img :src="getColumnIcon(column.icon)" v-show="customization.icons.selected" />
                 <draggable
                   class="list-group text-left mt-4"
                   :list="column.tasks"
@@ -134,6 +146,10 @@ export default {
         theme: {
           selected: "Dark",
           options: ["Dark", "Light"]
+        },
+        icons: {
+          selected: {text: "Yes", value: true},
+          options: [{text: "Yes", value: true}, {text: "No", value: false}]
         }
       }
     };
@@ -251,7 +267,8 @@ export default {
   }
 };
 </script>
-
+<style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
+<style src="vue-multiselect/dist/vue-multiselect.min.css"/>
 <style scoped>
 .background-template-light {
   background: linear-gradient(
@@ -320,10 +337,30 @@ export default {
 .scroll-area {
   max-height: 80vh;
 }
-ghost {
+.ghost {
   opacity: 0.5;
   background: #c8ebfb;
 }
 </style>
-<style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
-<style src="vue-multiselect/dist/vue-multiselect.min.css"/>
+<style>
+.multiselect__tags {
+  background-color: #00ff0000 !important;
+  border: none !important;
+}
+.multiselect__input,
+.multiselect__single {
+  color: white;
+  font-size: 25px;
+  background-color: #00ff0000 !important;
+}
+.multiselect__content-wrapper {
+  border: none;
+}
+.multiselect__option--highlight {
+  background: #2a2d2a;
+}
+.multiselect__option--highlight:after {
+  background: #2a2d2a;
+  border-radius: 2px;
+}
+</style>
