@@ -19,7 +19,7 @@
             :options="customization.theme.options"
           ></b-form-radio-group>
         </b-form-group>
-        <b-form-group label="Show Icons:">
+        <b-form-group label="Hide Icons:">
           <b-form-radio-group
             v-model="customization.icons.selected"
             :options="customization.icons.options"
@@ -77,22 +77,24 @@
                 :class="getColumnCustomization"
                 :style="getColumnStyle"
               >
-                <h4
-                  class="card-title"
-                  @dblclick="editing_component_id = column._id"
-                  v-show="editing_component_id !== column._id"
-                >{{column.title}}</h4>
-                <b-form-input
-                  type="text"
-                  @focusout="updateColumnTitle(column._id, column.title)"
-                  tabindex="0"
-                  v-if="editing_component_id === column._id"
-                  v-model="column.title"
-                  @keyup.enter="editing_component_id = null;"
-                  style="width: auto; margin: auto;"
-                />
+                <template>
+                  <h4
+                    class="card-title"
+                    @dblclick="editing_component_id = column._id"
+                    v-show="editing_component_id !== column._id"
+                  >{{column.title}}</h4>
+                  <b-form-input
+                    type="text"
+                    @focusout="updateColumnTitle(column._id, column.title)"
+                    tabindex="0"
+                    v-if="editing_component_id === column._id"
+                    v-model="column.title"
+                    @keyup.enter="editing_component_id = null;"
+                    style="width: auto; margin: auto;"
+                  />
+                </template>
                 <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
-                <b-img :src="getColumnIcon(column.icon)" v-show="customization.icons.selected" />
+                <b-img :src="getColumnIcon(column.icon)" v-show="!customization.icons.selected" />
                 <draggable
                   class="list-group text-left mt-4"
                   :list="column.tasks"
@@ -164,7 +166,7 @@ export default {
           options: ["Dark", "Light"]
         },
         icons: {
-          selected: { text: "Yes", value: true },
+          selected: false,
           options: [
             { text: "Yes", value: true },
             { text: "No", value: false }
