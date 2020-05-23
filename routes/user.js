@@ -161,6 +161,28 @@ router.put('/columns', isLoggedIn, async (req, res, next) => {
     }
 });
 
+// Delete Column
+router.delete('/columns', isLoggedIn, async (req, res, next) => {
+    try {
+        if (req.query.column_id) { // Check user specified task id
+            if (mongoose.Types.ObjectId.isValid(req.query.column_id)) { // Check task id is valid
+                let deletedColumn = await Column.deleteOne({ _id: req.query.column_id });
+                if (deletedColumn.deletedCount && deletedColumn.deletedCount > 0) {
+                    res.status(200).json({ status: true, result: deletedColumn });
+                } else {
+                    res.status(500).json({ status: true, result: "Error occurred during delete operation" });
+                }
+            } else { // If task is malformed
+                res.status(400).json({ status: false, message: "column_id is malformed." });
+            }
+        } else { // If user didn't specified any task id
+            res.status(400).send({ status: false, message: "column_id is required." });
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, message: err }); // If any error occurs
+    }
+});
+
 // Get Columns
 router.get('/columns', isLoggedIn, async (req, res, next) => {
     try {
@@ -233,8 +255,8 @@ router.delete('/tasks', isLoggedIn, async (req, res, next) => {
 router.post('/removeFromColumn', isLoggedIn, async (req, res, next) => {
     try {
         let { column_id, task_id } = req.body;
-        if (column_id &&  mongoose.Types.ObjectId.isValid(column_id)) {
-            if (task_id &&  mongoose.Types.ObjectId.isValid(task_id)) {
+        if (column_id && mongoose.Types.ObjectId.isValid(column_id)) {
+            if (task_id && mongoose.Types.ObjectId.isValid(task_id)) {
                 let column = await Column.findById(column_id);
                 if (column !== null) {
                     await Column.findByIdAndUpdate(column_id, { "$pull": { "tasks": task_id } }, { "new": true, "upsert": true });
@@ -257,8 +279,8 @@ router.post('/removeFromColumn', isLoggedIn, async (req, res, next) => {
 router.post('/addToColumn', isLoggedIn, async (req, res, next) => {
     try {
         let { column_id, task_id } = req.body;
-        if (column_id &&  mongoose.Types.ObjectId.isValid(column_id)) {
-            if (task_id &&  mongoose.Types.ObjectId.isValid(task_id)) {
+        if (column_id && mongoose.Types.ObjectId.isValid(column_id)) {
+            if (task_id && mongoose.Types.ObjectId.isValid(task_id)) {
                 let column = await Column.findById(column_id);
                 if (column !== null) {
                     await Column.findByIdAndUpdate(column_id, { "$push": { "tasks": task_id } }, { "new": true, "upsert": true });

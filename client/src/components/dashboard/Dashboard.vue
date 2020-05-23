@@ -83,6 +83,12 @@
                     @dblclick="editing_component_id = column._id"
                     v-show="editing_component_id !== column._id"
                   >{{column.title}}</h4>
+                  <span
+                    style="position: absolute; top: 0px; right:10px; cursor:pointer;"
+                    @click.prevent.stop="columnHandle($event, column)"
+                  >
+                    <i class="fas fa-ellipsis-h"></i>
+                  </span>
                   <b-form-input
                     type="text"
                     @focusout="updateColumnTitle(column._id, column.title)"
@@ -117,7 +123,7 @@
                       style="position: absolute; top: 0px; cursor:pointer;"
                       @click.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
                     >
-                      <i class="fas fa-pen"></i>
+                      <i class="fas fa-ellipsis-h"></i>
                     </span>
                     <p v-if="element.expireAt">
                       <i class="fa fa-clock" />
@@ -146,6 +152,12 @@
       :options="options"
       :ref="'vueTaskContextMenu'"
       @option-clicked="taskOptionSelected"
+    ></vue-simple-context-menu>
+    <vue-simple-context-menu
+      :elementId="'columnMenu'"
+      :options="options"
+      :ref="'vueColumnContextMenu'"
+      @option-clicked="columnOptionSelected"
     ></vue-simple-context-menu>
   </div>
 </template>
@@ -262,7 +274,14 @@ export default {
             console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
-        let { title, description, expireAt, label, labelType, column_id } = event.item;
+        let {
+          title,
+          description,
+          expireAt,
+          label,
+          labelType,
+          column_id
+        } = event.item;
         this.$http
           .post("/user/tasks", {
             title,
@@ -271,6 +290,37 @@ export default {
             label,
             labelType,
             column_id
+          })
+          .then(res => {
+            console.log(res.data);
+            this.loadProject(this.projects.selected._id); // load project again.
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      }
+    },
+    columnHandle(event, item) {
+      this.$refs.vueColumnContextMenu.showMenu(event, item);
+    },
+    columnOptionSelected(event) {
+      if (event.option.slug === "delete") {
+        this.$http
+          .delete("/user/columns", { params: { column_id: event.item._id } })
+          .then(res => {
+            console.log(res.data);
+            this.loadProject(this.projects.selected._id); // load project again.
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      } else if (event.option.slug === "clone") {
+        let { title, icon} = event.item;
+        this.$http
+          .post("/user/columns", {
+            title,
+            icon,
+            project_id: this.projects.selected._id
           })
           .then(res => {
             console.log(res.data);
