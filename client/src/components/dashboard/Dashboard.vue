@@ -1,5 +1,5 @@
 <template>
-  <div class="h-100" :class="getBackgroundCustomization">
+  <div class="h-100" :style="getBackgroundCustomization">
     <Navbar />
     <b-sidebar
       id="sidebar-1"
@@ -23,6 +23,13 @@
           <b-form-radio-group
             v-model="customization.icons.selected"
             :options="customization.icons.options"
+          ></b-form-radio-group>
+        </b-form-group>
+        <b-form-group label="Background:">
+          <b-form-radio-group
+            v-model="customization.background.selected"
+            :options="customization.background.options"
+             style="display:grid;"
           ></b-form-radio-group>
         </b-form-group>
       </div>
@@ -204,6 +211,10 @@ export default {
           selected: "Dark",
           options: ["Dark", "Light"]
         },
+        background: {
+          selected: "Random",
+          options: ["Random", "Solid Dark", "Blueish", "Valley", "Mountain", "City", "Seaside", "Northen Lights"]
+        },
         icons: {
           selected: false,
           options: [
@@ -228,10 +239,24 @@ export default {
       return "dark";
     },
     getBackgroundCustomization() {
-      if (this.customization.theme.selected === "Dark") {
-        return "background-template-dark";
+      switch (this.customization.background.selected) {
+        case "Solid Dark":
+          return `background: linear-gradient(140deg,#151a1f 4%,rgb(43, 41, 41) 13%,#102225 98%);`;
+        case "Blueish":
+          return `background: linear-gradient(180deg,rgb(50, 43, 167) 0%,rgb(69, 69, 175) 53%,rgba(0, 212, 255, 1) 100%);`;
+        case "Valley":
+          return "background-image: url('https://i.picsum.photos/id/1015/0/0.jpg');background-size: cover !important;";
+        case "Mountain":
+          return "background-image: url('https://i.picsum.photos/id/866/0/0.jpg');background-size: cover !important;";
+        case "City":
+          return "background-image: url('https://i.picsum.photos/id/122/4147/2756.jpg');background-size: cover !important;";
+        case "Seaside":
+          return "background-image: url('https://i.picsum.photos/id/1019/0/0.jpg');background-size: cover !important;";
+        case "Northen Lights":
+          return "background-image: url('https://i.picsum.photos/id/1022/0/0.jpg');background-size: cover !important;";
+        default:
+          return "background-image: url('https://picsum.photos/0/0');background-size: cover !important;";
       }
-      return "background-template-light";
     },
     getTaskCustomization() {
       if (this.customization.theme.selected === "Dark") {
@@ -315,7 +340,7 @@ export default {
             console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
-        let { title, icon} = event.item;
+        let { title, icon } = event.item;
         this.$http
           .post("/user/columns", {
             title,
@@ -416,28 +441,6 @@ export default {
 <style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
 <style src="vue-multiselect/dist/vue-multiselect.min.css"/>
 <style scoped>
-.background-template-light {
-  background: linear-gradient(
-    180deg,
-    rgb(50, 43, 167) 0%,
-    rgb(69, 69, 175) 53%,
-    rgba(0, 212, 255, 1) 100%
-  );
-}
-.background-template-dark {
-  background: linear-gradient(
-    180deg,
-    rgb(0, 0, 0) 0%,
-    rgb(56, 54, 54) 53%,
-    rgb(47, 46, 46) 100%
-  );
-  background: linear-gradient(
-    140deg,
-    #151a1f 4%,
-    rgb(43, 41, 41) 13%,
-    #102225 98%
-  );
-}
 .kanban-widget {
   padding: 0;
   margin: 5px;
