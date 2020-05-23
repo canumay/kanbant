@@ -105,13 +105,20 @@
                   :animation="200"
                 >
                   <b-card
-                    :title="getTaskName(element.title)"
                     class="mb-2 text-left task"
                     :class="getTaskCustomization"
                     :style="getTaskHeight(element)"
                     v-for="(element) in column.tasks"
-                    :key="element.title"
+                    @contextmenu.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
+                    :key="element._id"
                   >
+                    <h4 class="card-title">{{element.title}}</h4>
+                    <span
+                      style="position: absolute; top: 0px; cursor:pointer;"
+                      @click.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
+                    >
+                      <i class="fas fa-pen"></i>
+                    </span>
                     <p v-if="element.expireAt">
                       <i class="fa fa-clock" />
                       {{element.expireAt | moment('MMMM D')}}
@@ -134,6 +141,12 @@
         </b-row>
       </b-container>
     </PerfectScrollbar>
+    <vue-simple-context-menu
+      :elementId="'taskMenu'"
+      :options="options"
+      :ref="'vueTaskContextMenu'"
+      @option-clicked="taskOptionSelected"
+    ></vue-simple-context-menu>
   </div>
 </template>
 
@@ -160,6 +173,20 @@ export default {
       loaded: false,
       project_details: { title: "", description: "", columns: [] },
       editing_component_id: "",
+      options: [
+        {
+          name: "Clone",
+          slug: "clone"
+        },
+        {
+          name: "Edit",
+          slug: "edit"
+        },
+        {
+          name: "Delete",
+          slug: "delete"
+        }
+      ],
       customization: {
         theme: {
           selected: "Dark",
@@ -220,6 +247,40 @@ export default {
     }
   },
   methods: {
+    taskHandle(event, item) {
+      this.$refs.vueTaskContextMenu.showMenu(event, item);
+    },
+    taskOptionSelected(event) {
+      if (event.option.slug === "delete") {
+        this.$http
+          .delete("/user/tasks", { params: { task_id: event.item._id } })
+          .then(res => {
+            console.log(res.data);
+            this.loadProject(this.projects.selected._id); // load project again.
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      } else if (event.option.slug === "clone") {
+        let { title, description, expireAt, label, labelType, column_id } = event.item;
+        this.$http
+          .post("/user/tasks", {
+            title,
+            description,
+            expireAt,
+            label,
+            labelType,
+            column_id
+          })
+          .then(res => {
+            console.log(res.data);
+            this.loadProject(this.projects.selected._id); // load project again.
+          })
+          .catch(err => {
+            console.log(err.response);
+          });
+      }
+    },
     updateColumnTitle(column_id, title) {
       this.editing_component_id = null;
       this.$http

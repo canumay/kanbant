@@ -207,6 +207,28 @@ router.post('/tasks', isLoggedIn, async (req, res, next) => {
     }
 });
 
+// Delete Task
+router.delete('/tasks', isLoggedIn, async (req, res, next) => {
+    try {
+        if (req.query.task_id) { // Check user specified task id
+            if (mongoose.Types.ObjectId.isValid(req.query.task_id)) { // Check task id is valid
+                let deletedTask = await Task.deleteOne({ _id: req.query.task_id });
+                if (deletedTask.deletedCount && deletedTask.deletedCount > 0) {
+                    res.status(200).json({ status: true, result: deletedTask });
+                } else {
+                    res.status(500).json({ status: true, result: "Error occurred during delete operation" });
+                }
+            } else { // If task is malformed
+                res.status(400).json({ status: false, message: "task_id is malformed." });
+            }
+        } else { // If user didn't specified any task id
+            res.status(400).send({ status: false, message: "task_id is required." });
+        }
+    } catch (err) {
+        res.status(500).json({ status: false, message: err }); // If any error occurs
+    }
+});
+
 // Remove existing task from column
 router.post('/removeFromColumn', isLoggedIn, async (req, res, next) => {
     try {

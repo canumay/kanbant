@@ -7,6 +7,8 @@ import VueRouter from 'vue-router';
 import routes from './routes';
 import axios from 'axios';
 import moment from 'vue-moment';
+import 'vue-simple-context-menu/dist/vue-simple-context-menu.css'
+import VueSimpleContextMenu from 'vue-simple-context-menu'
 
 const axiosInstance = axios.create({
   withCredentials: true,
@@ -18,6 +20,8 @@ Vue.config.productionTip = false
 Vue.use(VueRouter);
 
 Vue.use(moment);
+
+Vue.component('vue-simple-context-menu', VueSimpleContextMenu)
 
 Vue.prototype.$http = axiosInstance;
 
