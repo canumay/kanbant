@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-navbar toggleable="lg" type="dark" style="background-color: #007bff0d!important;">
+    <b-navbar toggleable="lg" type="dark" style="background-color: rgba(0, 0, 0, 0.32) !important;">
       <b-navbar-brand style="width: 100%;text-align: center;">Kanbant</b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
