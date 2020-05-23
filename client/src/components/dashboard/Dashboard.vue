@@ -69,174 +69,176 @@
       ></i>
     </div>
     <br />
-    <PerfectScrollbar class="scroll-area" v-if="loaded">
-      <b-container style="max-width: none !important;">
-        <b-row>
-          <b-col class="d-flex">
-            <b-col
-              class="col kanban-widget"
-              v-for="(column, index) in project_details.columns"
-              :key="index"
-            >
-              <b-card
-                tag="article"
-                class="mb-2 widget-img kanban-widget text-center p-2"
-                :class="getColumnCustomization"
-                :style="getColumnStyle"
+    <transition name="slide-fade">
+      <PerfectScrollbar class="scroll-area" v-if="loaded">
+        <b-container style="max-width: none !important;">
+          <b-row>
+            <b-col class="d-flex">
+              <b-col
+                class="col kanban-widget"
+                v-for="(column, index) in project_details.columns"
+                :key="index"
               >
-                <template>
-                  <h4
-                    class="card-title"
-                    @dblclick="editing_component_id = column._id"
-                    v-show="editing_component_id !== column._id"
-                  >{{column.title}}</h4>
-                  <span
-                    style="position: absolute; top: 0px; right:10px; cursor:pointer;"
-                    @click.prevent.stop="columnHandle($event, column)"
-                  >
-                    <i class="fas fa-ellipsis-h"></i>
-                  </span>
-                  <b-form-input
-                    type="text"
-                    @focusout="updateColumnTitle(column._id, column.title)"
-                    tabindex="0"
-                    v-if="editing_component_id === column._id"
-                    v-model="column.title"
-                    @keyup.enter="editing_component_id = null;"
-                    style="width: auto; margin: auto;"
-                  />
-                </template>
-                <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
-                <b-img :src="getColumnIcon(column.icon)" v-show="!customization.icons.selected" />
-                <draggable
-                  class="list-group text-left mt-4"
-                  :list="column.tasks"
-                  style="cursor:move; min-height: 100px;"
-                  group="people"
-                  ghost-class="ghost"
-                  @change="changed(column._id, $event)"
-                  :animation="200"
+                <b-card
+                  tag="article"
+                  class="mb-2 widget-img kanban-widget text-center p-2"
+                  :class="getColumnCustomization"
+                  :style="getColumnStyle"
                 >
-                  <b-card
-                    class="mb-2 text-left task"
-                    :class="getTaskCustomization"
-                    :style="getTaskHeight(element)"
-                    v-for="(element) in column.tasks"
-                    @contextmenu.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
-                    :key="element._id"
-                  >
-                    <h4 class="card-title">{{element.title}}</h4>
+                  <template>
+                    <h4
+                      class="card-title"
+                      @dblclick="editing_component_id = column._id"
+                      v-show="editing_component_id !== column._id"
+                    >{{column.title}}</h4>
                     <span
-                      style="position: absolute; top: 0px; cursor:pointer;"
-                      @click.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
+                      style="position: absolute; top: 0px; right:10px; cursor:pointer;"
+                      @click.prevent.stop="columnHandle($event, column)"
                     >
                       <i class="fas fa-ellipsis-h"></i>
                     </span>
-                    <p v-if="element.expireAt">
-                      <i class="fa fa-clock" />
-                      {{element.expireAt | moment('MMMM D')}}
-                    </p>
-                    <span
-                      :class="`badge badge-${element.labelType}`"
-                      style="text-transform:capitalize; font-size: 0.635rem"
-                      v-if="element.labelType"
-                    >
-                      <i class="fas fa-circle" />
-                      {{element.label}}
-                    </span>
-                  </b-card>
-                </draggable>
-                <hr :style="getHRStyle" />
-                <transition name="slide-fade">
-                  <div
-                    class="form"
-                    v-if="new_task.column_id === column._id"
-                    style="font-size: smaller;"
+                    <b-form-input
+                      type="text"
+                      @focusout="updateColumnTitle(column._id, column.title)"
+                      tabindex="0"
+                      v-if="editing_component_id === column._id"
+                      v-model="column.title"
+                      @keyup.enter="editing_component_id = null;"
+                      style="width: auto; margin: auto;"
+                    />
+                  </template>
+                  <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
+                  <b-img :src="getColumnIcon(column.icon)" v-show="!customization.icons.selected" />
+                  <draggable
+                    class="list-group text-left mt-4"
+                    :list="column.tasks"
+                    style="cursor:move; min-height: 100px;"
+                    group="people"
+                    ghost-class="ghost"
+                    @change="changed(column._id, $event)"
+                    :animation="200"
                   >
-                    <b-form-group
-                      label="What's must be done?"
-                      class="text-left"
-                      :invalid-feedback="invalidTitleFeedback"
-                      :state="taskTitleChecker"
+                    <b-card
+                      class="mb-2 text-left task"
+                      :class="getTaskCustomization"
+                      :style="getTaskHeight(element)"
+                      v-for="(element) in column.tasks"
+                      @contextmenu.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
+                      :key="element._id"
                     >
-                      <b-form-input
-                        v-model="new_task.title"
-                        :state="taskTitleChecker"
-                        trim
-                        size="sm"
-                      ></b-form-input>
-                    </b-form-group>
-                    <b-form-group label="Expiration Date (optional)" class="text-left">
-                      <b-form-datepicker v-model="new_task.expireAt" class="mb-2" size="sm"></b-form-datepicker>
-                    </b-form-group>
-                    <b-form-group label="Do you wanna label the task?" class="text-left">
-                      <b-form-radio-group
-                        v-model="new_task.isLabeled"
-                        :options="[{text: 'Yes', value:true}, {text:'No', value:false}]"
-                      ></b-form-radio-group>
-                    </b-form-group>
-                    <template v-if="new_task.isLabeled">
+                      <h4 class="card-title">{{element.title}}</h4>
+                      <span
+                        style="position: absolute; top: 0px; cursor:pointer;"
+                        @click.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
+                      >
+                        <i class="fas fa-ellipsis-h"></i>
+                      </span>
+                      <p v-if="element.expireAt">
+                        <i class="fa fa-clock" />
+                        {{element.expireAt | moment('MMMM D')}}
+                      </p>
+                      <span
+                        :class="`badge badge-${element.labelType}`"
+                        style="text-transform:capitalize; font-size: 0.635rem"
+                        v-if="element.labelType"
+                      >
+                        <i class="fas fa-circle" />
+                        {{element.label}}
+                      </span>
+                    </b-card>
+                  </draggable>
+                  <hr :style="getHRStyle" />
+                  <transition name="slide-fade">
+                    <div
+                      class="form"
+                      v-if="new_task.column_id === column._id"
+                      style="font-size: smaller;"
+                    >
                       <b-form-group
-                        label="Label"
+                        label="What's must be done?"
                         class="text-left"
-                        :invalid-feedback="invalidLabelFeedback"
-                        :state="taskLabelChecker"
+                        :invalid-feedback="invalidTitleFeedback"
+                        :state="taskTitleChecker"
                       >
                         <b-form-input
-                          v-model="new_task.label"
-                          :state="taskLabelChecker"
+                          v-model="new_task.title"
+                          :state="taskTitleChecker"
                           trim
                           size="sm"
                         ></b-form-input>
                       </b-form-group>
-                      <b-form-group label="Label Type" class="text-left">
-                        <b-form-select
-                          v-model="new_task.labelType"
-                          :options="['danger', 'warning', 'primary', 'info', 'dark', 'success']"
-                          size="sm"
-                        ></b-form-select>
+                      <b-form-group label="Expiration Date (optional)" class="text-left">
+                        <b-form-datepicker v-model="new_task.expireAt" class="mb-2" size="sm"></b-form-datepicker>
                       </b-form-group>
-                    </template>
-                    <b-form-group>
-                      <b-button
-                        v-if="taskTitleChecker"
-                        class="float-left mt-3"
-                        type="submit"
-                        variant="success"
-                        style="width: 48%;"
-                        @click="createNewTask"
-                      >
-                        <i class="fas fa-check mr-2" />Save task
-                      </b-button>
-                      <b-button
-                        v-if="taskTitleChecker"
-                        class="float-right mt-3"
-                        type="reset"
-                        variant="danger"
-                        style="width: 48%;"
-                        @click="resetNewTask"
-                      >
-                        <i class="fas fa-times mr-2" />Cancel
-                      </b-button>
-                    </b-form-group>
-                  </div>
-                </transition>
-                <i
-                  class="fas fa-plus"
-                  @click="e => {resetNewTask(); new_task.column_id=column._id;}"
-                  v-show="new_task.column_id !== column._id"
-                ></i>
-                <i
-                  class="fas fa-times"
-                  @click="resetNewTask"
-                  v-show="new_task.column_id === column._id && !taskTitleChecker"
-                ></i>
-              </b-card>
+                      <b-form-group label="Do you wanna label the task?" class="text-left">
+                        <b-form-radio-group
+                          v-model="new_task.isLabeled"
+                          :options="[{text: 'Yes', value:true}, {text:'No', value:false}]"
+                        ></b-form-radio-group>
+                      </b-form-group>
+                      <template v-if="new_task.isLabeled">
+                        <b-form-group
+                          label="Label"
+                          class="text-left"
+                          :invalid-feedback="invalidLabelFeedback"
+                          :state="taskLabelChecker"
+                        >
+                          <b-form-input
+                            v-model="new_task.label"
+                            :state="taskLabelChecker"
+                            trim
+                            size="sm"
+                          ></b-form-input>
+                        </b-form-group>
+                        <b-form-group label="Label Type" class="text-left">
+                          <b-form-select
+                            v-model="new_task.labelType"
+                            :options="['danger', 'warning', 'primary', 'info', 'dark', 'success']"
+                            size="sm"
+                          ></b-form-select>
+                        </b-form-group>
+                      </template>
+                      <b-form-group>
+                        <b-button
+                          v-if="taskTitleChecker"
+                          class="float-left mt-3"
+                          type="submit"
+                          variant="success"
+                          style="width: 48%;"
+                          @click="createNewTask"
+                        >
+                          <i class="fas fa-check mr-2" />Save task
+                        </b-button>
+                        <b-button
+                          v-if="taskTitleChecker"
+                          class="float-right mt-3"
+                          type="reset"
+                          variant="danger"
+                          style="width: 48%;"
+                          @click="resetNewTask"
+                        >
+                          <i class="fas fa-times mr-2" />Cancel
+                        </b-button>
+                      </b-form-group>
+                    </div>
+                  </transition>
+                  <i
+                    class="fas fa-plus"
+                    @click="e => {resetNewTask(); new_task.column_id=column._id;}"
+                    v-show="new_task.column_id !== column._id"
+                  ></i>
+                  <i
+                    class="fas fa-times"
+                    @click="resetNewTask"
+                    v-show="new_task.column_id === column._id && !taskTitleChecker"
+                  ></i>
+                </b-card>
+              </b-col>
             </b-col>
-          </b-col>
-        </b-row>
-      </b-container>
-    </PerfectScrollbar>
+          </b-row>
+        </b-container>
+      </PerfectScrollbar>
+    </transition>
     <vue-simple-context-menu
       :elementId="'taskMenu'"
       :options="options"
@@ -717,10 +719,10 @@ export default {
   border-radius: 2px;
 }
 .slide-fade-enter-active {
-  transition: all .3s ease;
+  transition: all 0.3s ease;
 }
 .slide-fade-leave-active {
-  transition: all .1s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+  transition: all 0.1s cubic-bezier(1, 0.5, 0.8, 1);
 }
 .slide-fade-enter, .slide-fade-leave-to
 /* .slide-fade-leave-active below version 2.1.8 */ {
