@@ -147,7 +147,83 @@
                   </b-card>
                 </draggable>
                 <hr :style="getHRStyle" />
-                <i class="fa fa-plus"></i>
+                <div
+                  class="form"
+                  v-if="new_task.column_id === column._id"
+                  style="font-size: smaller;"
+                >
+                  <b-form-group
+                    label="What's must be done?"
+                    class="text-left"
+                    :invalid-feedback="invalidTitleFeedback"
+                    :state="taskTitleChecker"
+                  >
+                    <b-form-input v-model="new_task.title" :state="taskTitleChecker" trim size="sm"></b-form-input>
+                  </b-form-group>
+                  <b-form-group label="Expiration Date (optional)" class="text-left">
+                    <b-form-datepicker v-model="new_task.expireAt" class="mb-2" size="sm"></b-form-datepicker>
+                  </b-form-group>
+                  <b-form-group label="Do you wanna label the task?" class="text-left">
+                    <b-form-radio-group
+                      v-model="new_task.isLabeled"
+                      :options="[{text: 'Yes', value:true}, {text:'No', value:false}]"
+                    ></b-form-radio-group>
+                  </b-form-group>
+                  <template v-if="new_task.isLabeled">
+                    <b-form-group
+                      label="Label"
+                      class="text-left"
+                      :invalid-feedback="invalidLabelFeedback"
+                      :state="taskLabelChecker"
+                    >
+                      <b-form-input
+                        v-model="new_task.label"
+                        :state="taskLabelChecker"
+                        trim
+                        size="sm"
+                      ></b-form-input>
+                    </b-form-group>
+                    <b-form-group label="Label Type" class="text-left">
+                      <b-form-select
+                        v-model="new_task.labelType"
+                        :options="['danger', 'warning', 'primary', 'info', 'dark', 'success']"
+                        size="sm"
+                      ></b-form-select>
+                    </b-form-group>
+                  </template>
+                  <b-form-group>
+                    <b-button
+                      v-if="taskTitleChecker"
+                      class="float-left mt-3"
+                      type="submit"
+                      variant="success"
+                      style="width: 48%;"
+                      @click="createNewTask"
+                    >
+                      <i class="fas fa-check mr-2" />Save task
+                    </b-button>
+                    <b-button
+                      v-if="taskTitleChecker"
+                      class="float-right mt-3"
+                      type="reset"
+                      variant="danger"
+                      style="width: 48%;"
+                      @click="resetNewTask"
+                    >
+                      <i class="fas fa-times mr-2" />Cancel
+                    </b-button>
+                  </b-form-group>
+                </div>
+                <i
+                  class="fas fa-plus"
+                  @click="e => {resetNewTask(); new_task.column_id=column._id;}"
+                  v-show="new_task.column_id !== column._id"
+                ></i>
+                <i
+                  class="fas fa-times"
+                  @click="resetNewTask"
+                  v-show="new_task.column_id === column._id && !taskTitleChecker"
+                ></i>
               </b-card>
             </b-col>
           </b-col>
@@ -251,10 +327,42 @@ export default {
             { text: "No", value: false }
           ]
         }
+      },
+      new_task: {
+        title: "",
+        label: "",
+        labelType: null,
+        expireAt: null,
+        column_id: null,
+        isLabeled: false
       }
     };
   },
   computed: {
+    taskTitleChecker() {
+      return this.new_task.title.length >= 3 ? true : false;
+    },
+    taskLabelChecker() {
+      return this.new_task.label.length >= 3 ? true : false;
+    },
+    invalidTitleFeedback() {
+      if (this.new_task.title.length > 3) {
+        return "";
+      } else if (this.new_task.title.length > 0) {
+        return "Enter at least 3 characters";
+      } else {
+        return "Please enter something";
+      }
+    },
+    invalidLabelFeedback() {
+      if (this.new_task.label.length > 3) {
+        return "";
+      } else if (this.new_task.label.length > 0) {
+        return "Enter at least 3 characters";
+      } else {
+        return "Please enter something";
+      }
+    },
     getSidebarBGVariant() {
       if (this.customization.theme.selected === "Dark") {
         return "dark";
@@ -313,6 +421,54 @@ export default {
     }
   },
   methods: {
+    createNewTask() {
+      let {
+        title,
+        label,
+        labelType,
+        expireAt,
+        column_id,
+        isLabeled
+      } = this.new_task;
+      let data = { title, column_id };
+      if (column_id !== null) {
+        if (expireAt !== null) {
+          expireAt = new Date(expireAt);
+          data["expireAt"] = expireAt;
+        }
+        if (label !== null && isLabeled) {
+          data["label"] = label;
+          if (labelType !== null) {
+            data["labelType"] = labelType;
+          } else {
+            data["labelType"] = "dark";
+          }
+        }
+        this.$http
+          .post("/user/tasks", data)
+          .then(res => {
+            console.log(res.data);
+            this.loadProject(this.projects.selected._id); // load project again.
+            this.resetNewTask();
+          })
+          .catch(err => {
+            console.log(err.response);
+            this.loadProject(this.projects.selected._id); // load project again.
+          });
+      } else {
+        // warning...
+      }
+    },
+    resetNewTask() {
+      this.new_task = {
+        title: "",
+        label: "",
+        labelType: null,
+        expireAt: null,
+        column_id: null,
+        isLabeled: false
+      };
+    },
     checkLocalStorage() {
       if (localStorage.theme) {
         if (this.customization.theme.options.includes(localStorage.theme)) {
@@ -347,13 +503,7 @@ export default {
             console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
-        let {
-          title,
-          expireAt,
-          label,
-          labelType,
-          column_id
-        } = event.item;
+        let { title, expireAt, label, labelType, column_id } = event.item;
         this.$http
           .post("/user/tasks", {
             title,
