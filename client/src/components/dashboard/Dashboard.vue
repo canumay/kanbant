@@ -349,7 +349,6 @@ export default {
       } else if (event.option.slug === "clone") {
         let {
           title,
-          description,
           expireAt,
           label,
           labelType,
@@ -358,7 +357,6 @@ export default {
         this.$http
           .post("/user/tasks", {
             title,
-            description,
             expireAt,
             label,
             labelType,

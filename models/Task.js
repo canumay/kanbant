@@ -4,7 +4,6 @@ const Joi = require('joi');
 
 var TaskSchema = new mongoose.Schema({
     title: { type: String, required: true },
-    description: { type: String, required: false },
     expireAt: { type: Date, required: false },
     label: { type: String, required: false },
     labelType: { type: String, enum: ['danger', 'warning', 'primary', 'info', 'dark', 'success'], required: false }
@@ -16,7 +15,6 @@ TaskSchema.plugin(timestamps);
 TaskSchema.methods.joiValidate = (obj) => {
     const taskSchema = Joi.object({
         title: Joi.string().min(3).max(60).required(),
-        description: Joi.string().min(3).max(280),
         column_id: Joi.string(),
         expireAt: Joi.date(),
         label: Joi.string().min(3).max(15),
