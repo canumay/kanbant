@@ -29,7 +29,7 @@
           <b-form-radio-group
             v-model="customization.background.selected"
             :options="customization.background.options"
-             style="display:grid;"
+            style="display:grid;"
           ></b-form-radio-group>
         </b-form-group>
       </div>
@@ -183,6 +183,26 @@ export default {
     Multiselect
     // VueContentLoading
   },
+  watch: {
+    "customization.theme.selected": {
+      handler: val => {
+        localStorage.theme = val;
+      },
+      deep: true
+    },
+    "customization.background.selected": {
+      handler: val => {
+        localStorage.bg = val;
+      },
+      deep: true
+    },
+    "customization.icons.selected": {
+      handler: val => {
+        localStorage.icons = val;
+      },
+      deep: true
+    }
+  },
   data() {
     return {
       projects: {
@@ -213,7 +233,16 @@ export default {
         },
         background: {
           selected: "Random",
-          options: ["Random", "Solid Dark", "Blueish", "Valley", "Mountain", "City", "Seaside", "Northen Lights"]
+          options: [
+            "Random",
+            "Solid Dark",
+            "Blueish",
+            "Valley",
+            "Mountain",
+            "City",
+            "Seaside",
+            "Northen Lights"
+          ]
         },
         icons: {
           selected: false,
@@ -284,6 +313,25 @@ export default {
     }
   },
   methods: {
+    checkLocalStorage() {
+      if (localStorage.theme) {
+        if (this.customization.theme.options.includes(localStorage.theme)) {
+          this.customization.theme.selected = localStorage.theme;
+        }
+      }
+      if (localStorage.bg) {
+        if (this.customization.background.options.includes(localStorage.bg)) {
+          this.customization.background.selected = localStorage.bg;
+        }
+      }
+      if (localStorage.icons) {
+        if (localStorage.icons === "true") {
+          this.customization.icons.selected = true;
+        } else {
+          this.customization.icons.selected = false;
+        }
+      }
+    },
     taskHandle(event, item) {
       this.$refs.vueTaskContextMenu.showMenu(event, item);
     },
@@ -424,6 +472,7 @@ export default {
     }
   },
   created() {
+    this.checkLocalStorage();
     this.$http.get("/user/projects").then(res => {
       if (res.data.status && res.data.status === true) {
         this.projects.options = res.data.results;
