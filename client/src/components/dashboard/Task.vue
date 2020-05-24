@@ -82,7 +82,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       } else if (evt.removed) {
         let task_id = evt.removed.element._id;
@@ -95,7 +94,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       } else {
         console.log("Unknown process.");

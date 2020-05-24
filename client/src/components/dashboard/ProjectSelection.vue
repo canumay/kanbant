@@ -81,7 +81,6 @@ export default {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
-          console.log(err.response);
         });
     },
     deleteProject() {
@@ -97,7 +96,6 @@ export default {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
-          console.log(err.response);
         });
     }
   }

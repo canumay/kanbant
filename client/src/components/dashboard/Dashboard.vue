@@ -192,7 +192,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
         let { title, expireAt, label, labelType, column_id } = event.item;
@@ -212,7 +211,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       }
     },
@@ -228,7 +226,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
         let { title, icon } = event.item;
@@ -246,7 +243,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       }
     },
@@ -280,7 +276,6 @@ export default {
           if (err.response.status === 404) {
             this.getProjects();
           }
-          console.log(err.response);
         });
     },
     loadUserInformations() {
@@ -298,7 +293,6 @@ export default {
           if (err.response.status === 404) {
             this.getProjects();
           }
-          console.log(err.response);
         });
     }
   },

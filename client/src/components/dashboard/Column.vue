@@ -271,7 +271,6 @@ export default {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
-            console.log(err.response);
           });
       } else {
         // warning...
@@ -304,7 +303,6 @@ export default {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
-          console.log(err.response);
         });
     },
     changeComponentIconStatus(column_id) {
@@ -341,7 +339,6 @@ export default {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
-          console.log(err.response);
         });
     }
   }
