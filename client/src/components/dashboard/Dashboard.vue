@@ -13,7 +13,7 @@
     <!-- End Of Project Selection -->
 
     <!-- Columns -->
-    <transition name="slide-fade">
+    <transition name="fade">
       <PerfectScrollbar class="scroll-area" v-if="loaded">
         <b-container style="max-width: none !important;">
           <b-row>
@@ -242,7 +242,7 @@ export default {
       }
     },
     loadProject(project_id) {
-      this.loaded = false;
+      // this.loaded = false; TODO: Deprecated for now.
       this.$http
         .get("/user/projects", {
           params: { project_id }
@@ -366,6 +366,12 @@ export default {
 .slide-fade-enter, .slide-fade-leave-to
 /* .slide-fade-leave-active below version 2.1.8 */ {
   transform: translateX(10px);
+  opacity: 0;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
 }
 </style>
