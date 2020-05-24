@@ -1,74 +1,18 @@
 <template>
   <div class="h-100" :style="getBackgroundCustomization">
+    <!-- Navbar -->
     <Navbar />
-    <b-sidebar
-      id="sidebar-1"
-      title="Customization"
-      :bg-variant="getSidebarBGVariant"
-      :text-variant="getSidebarTextVariant"
-      backdrop
-      shadow
-      right
-    >
-      <div class="px-3 py-2">
-        <p>Kanbant provides lots of customizations. You can customize the appearance of your dashboard.</p>
-        <hr />
-        <b-form-group label="Theme Mode:">
-          <b-form-radio-group
-            v-model="customization.theme.selected"
-            :options="customization.theme.options"
-          ></b-form-radio-group>
-        </b-form-group>
-        <b-form-group label="Hide Icons:">
-          <b-form-radio-group
-            v-model="customization.icons.selected"
-            :options="customization.icons.options"
-          ></b-form-radio-group>
-        </b-form-group>
-        <b-form-group label="Background:">
-          <b-form-radio-group
-            v-model="customization.background.selected"
-            :options="customization.background.options"
-            style="display:grid;"
-          ></b-form-radio-group>
-        </b-form-group>
-      </div>
-    </b-sidebar>
-    <div style="height: 40px; margin-top: 10px;">
-      <multiselect
-        v-model="projects.selected"
-        track-by="_id"
-        label="title"
-        placeholder
-        class="ml-4 mt-2"
-        style="width: auto; display: inline-block;"
-        selectLabel
-        :options="projects.options"
-        :searchable="true"
-        :allow-empty="false"
-        :hide-selected="true"
-        @select="projectSelected"
-      >
-        <template slot="singleLabel" slot-scope="{ option }">
-          <strong>{{ option.title }}</strong>
-        </template>
-        <template slot="option" slot-scope="props">
-          <div class="option__desc">
-            <i class="fas fa-tasks" style="margin-right: 10px;"></i>
-            <span class="option__title">{{ props.option.title }}</span>
-            <span
-              :class="`badge badge-${props.option.labelType} float-right`"
-            >{{props.option.label}}</span>
-          </div>
-        </template>
-      </multiselect>
-      <i
-        class="fas fa-cog text-white float-right mr-3 mt-3"
-        style="font-size: 25px;"
-        v-b-toggle.sidebar-1
-      ></i>
-    </div>
-    <br />
+    <!-- End Of Navbar -->
+
+    <!-- Customization Sidebar -->
+    <Sidebar :customization="customization" />
+    <!-- End Of Customization Sidebar -->
+
+    <!-- Project Selection -->
+    <ProjectSelection :projects="projects" />
+    <!-- End Of Project Selection -->
+
+    <!-- Columns -->
     <transition name="slide-fade">
       <PerfectScrollbar class="scroll-area" v-if="loaded">
         <b-container style="max-width: none !important;">
@@ -79,193 +23,52 @@
                 v-for="(column, index) in project_details.columns"
                 :key="index"
               >
-                <b-card
-                  tag="article"
-                  class="mb-2 widget-img kanban-widget text-center p-2"
-                  :class="getColumnCustomization"
-                  :style="getColumnStyle"
-                >
-                  <template>
-                    <h4
-                      class="card-title"
-                      @dblclick="editing_component_id = column._id"
-                      v-show="editing_component_id !== column._id"
-                    >{{column.title}}</h4>
-                    <span
-                      style="position: absolute; top: 0px; right:10px; cursor:pointer;"
-                      @click.prevent.stop="columnHandle($event, column)"
-                    >
-                      <i class="fas fa-ellipsis-h"></i>
-                    </span>
-                    <b-form-input
-                      type="text"
-                      @focusout="updateColumnTitle(column._id, column.title)"
-                      tabindex="0"
-                      v-if="editing_component_id === column._id"
-                      v-model="column.title"
-                      @keyup.enter="editing_component_id = null;"
-                      style="width: auto; margin: auto;"
-                    />
-                  </template>
-                  <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
-                  <b-img :src="getColumnIcon(column.icon)" v-show="!customization.icons.selected" />
-                  <draggable
-                    class="list-group text-left mt-4"
-                    :list="column.tasks"
-                    style="cursor:move; min-height: 100px;"
-                    group="people"
-                    ghost-class="ghost"
-                    @change="changed(column._id, $event)"
-                    :animation="200"
-                  >
-                    <b-card
-                      class="mb-2 text-left task"
-                      :class="getTaskCustomization"
-                      :style="getTaskHeight(element)"
-                      v-for="(element) in column.tasks"
-                      @contextmenu.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
-                      :key="element._id"
-                    >
-                      <h4 class="card-title">{{element.title}}</h4>
-                      <span
-                        style="position: absolute; top: 0px; cursor:pointer;"
-                        @click.prevent.stop="e => {element['column_id'] = column._id; taskHandle($event, element)}"
-                      >
-                        <i class="fas fa-ellipsis-h"></i>
-                      </span>
-                      <p v-if="element.expireAt">
-                        <i class="fa fa-clock" />
-                        {{element.expireAt | moment('MMMM D')}}
-                      </p>
-                      <span
-                        :class="`badge badge-${element.labelType}`"
-                        style="text-transform:capitalize; font-size: 0.635rem"
-                        v-if="element.labelType"
-                      >
-                        <i class="fas fa-circle" />
-                        {{element.label}}
-                      </span>
-                    </b-card>
-                  </draggable>
-                  <hr :style="getHRStyle" />
-                  <transition name="slide-fade">
-                    <div
-                      class="form"
-                      v-if="new_task.column_id === column._id"
-                      style="font-size: smaller;"
-                    >
-                      <b-form-group
-                        label="What's must be done?"
-                        class="text-left"
-                        :invalid-feedback="invalidTitleFeedback"
-                        :state="taskTitleChecker"
-                      >
-                        <b-form-input
-                          v-model="new_task.title"
-                          :state="taskTitleChecker"
-                          trim
-                          size="sm"
-                        ></b-form-input>
-                      </b-form-group>
-                      <b-form-group label="Expiration Date (optional)" class="text-left">
-                        <b-form-datepicker v-model="new_task.expireAt" class="mb-2" size="sm"></b-form-datepicker>
-                      </b-form-group>
-                      <b-form-group label="Do you wanna label the task?" class="text-left">
-                        <b-form-radio-group
-                          v-model="new_task.isLabeled"
-                          :options="[{text: 'Yes', value:true}, {text:'No', value:false}]"
-                        ></b-form-radio-group>
-                      </b-form-group>
-                      <template v-if="new_task.isLabeled">
-                        <b-form-group
-                          label="Label"
-                          class="text-left"
-                          :invalid-feedback="invalidLabelFeedback"
-                          :state="taskLabelChecker"
-                        >
-                          <b-form-input
-                            v-model="new_task.label"
-                            :state="taskLabelChecker"
-                            trim
-                            size="sm"
-                          ></b-form-input>
-                        </b-form-group>
-                        <b-form-group label="Label Type" class="text-left">
-                          <b-form-select
-                            v-model="new_task.labelType"
-                            :options="['danger', 'warning', 'primary', 'info', 'dark', 'success']"
-                            size="sm"
-                          ></b-form-select>
-                        </b-form-group>
-                      </template>
-                      <b-form-group>
-                        <b-button
-                          v-if="taskTitleChecker"
-                          class="float-left mt-3"
-                          type="submit"
-                          variant="success"
-                          style="width: 48%;"
-                          @click="createNewTask"
-                        >
-                          <i class="fas fa-check mr-2" />Save task
-                        </b-button>
-                        <b-button
-                          v-if="taskTitleChecker"
-                          class="float-right mt-3"
-                          type="reset"
-                          variant="danger"
-                          style="width: 48%;"
-                          @click="resetNewTask"
-                        >
-                          <i class="fas fa-times mr-2" />Cancel
-                        </b-button>
-                      </b-form-group>
-                    </div>
-                  </transition>
-                  <i
-                    class="fas fa-plus"
-                    @click="e => {resetNewTask(); new_task.column_id=column._id;}"
-                    v-show="new_task.column_id !== column._id"
-                  ></i>
-                  <i
-                    class="fas fa-times"
-                    @click="resetNewTask"
-                    v-show="new_task.column_id === column._id && !taskTitleChecker"
-                  ></i>
-                </b-card>
+                <!-- Column -->
+                <Column :customization="customization" :column="column" />
+                <!-- End of Column -->
               </b-col>
             </b-col>
           </b-row>
         </b-container>
       </PerfectScrollbar>
     </transition>
+    <!-- End Of Columns -->
+
+    <!-- Task Context Menu -->
     <vue-simple-context-menu
       :elementId="'taskMenu'"
       :options="options"
       :ref="'vueTaskContextMenu'"
       @option-clicked="taskOptionSelected"
     ></vue-simple-context-menu>
+    <!-- End Of TaskContext Menu -->
+
+    <!-- Column Context Menu -->
     <vue-simple-context-menu
       :elementId="'columnMenu'"
       :options="options"
       :ref="'vueColumnContextMenu'"
       @option-clicked="columnOptionSelected"
     ></vue-simple-context-menu>
+    <!-- End Of Column Context Menu -->
   </div>
 </template>
 
 <script>
 import Navbar from "./Navbar";
-import draggable from "vuedraggable";
+import Sidebar from "./Sidebar";
+import ProjectSelection from "./ProjectSelection";
+import Column from "./Column";
 import { PerfectScrollbar } from "vue2-perfect-scrollbar";
-import Multiselect from "vue-multiselect";
+import eventBus from "../../eventBus";
 // import VueContentLoading from "vue-content-loading"; // TODO: implement this
 export default {
   components: {
     Navbar,
-    draggable,
-    PerfectScrollbar,
-    Multiselect
+    Sidebar,
+    ProjectSelection,
+    Column,
+    PerfectScrollbar
     // VueContentLoading
   },
   watch: {
@@ -296,7 +99,6 @@ export default {
       },
       loaded: false,
       project_details: { title: "", description: "", columns: [] },
-      editing_component_id: "",
       options: [
         {
           name: "Clone",
@@ -336,54 +138,10 @@ export default {
             { text: "No", value: false }
           ]
         }
-      },
-      new_task: {
-        title: "",
-        label: "",
-        labelType: null,
-        expireAt: null,
-        column_id: null,
-        isLabeled: false
       }
     };
   },
   computed: {
-    taskTitleChecker() {
-      return this.new_task.title.length >= 3 ? true : false;
-    },
-    taskLabelChecker() {
-      return this.new_task.label.length >= 3 ? true : false;
-    },
-    invalidTitleFeedback() {
-      if (this.new_task.title.length > 3) {
-        return "";
-      } else if (this.new_task.title.length > 0) {
-        return "Enter at least 3 characters";
-      } else {
-        return "Please enter something";
-      }
-    },
-    invalidLabelFeedback() {
-      if (this.new_task.label.length > 3) {
-        return "";
-      } else if (this.new_task.label.length > 0) {
-        return "Enter at least 3 characters";
-      } else {
-        return "Please enter something";
-      }
-    },
-    getSidebarBGVariant() {
-      if (this.customization.theme.selected === "Dark") {
-        return "dark";
-      }
-      return "light";
-    },
-    getSidebarTextVariant() {
-      if (this.customization.theme.selected === "Dark") {
-        return "light";
-      }
-      return "dark";
-    },
     getBackgroundCustomization() {
       switch (this.customization.background.selected) {
         case "Solid Dark":
@@ -403,81 +161,9 @@ export default {
         default:
           return "background-image: url('https://picsum.photos/0/0');background-size: cover !important;";
       }
-    },
-    getTaskCustomization() {
-      if (this.customization.theme.selected === "Dark") {
-        return "bg-dark text-white";
-      }
-      return "";
-    },
-    getColumnCustomization() {
-      if (this.customization.theme.selected === "Dark") {
-        return "text-white";
-      }
-      return "";
-    },
-    getColumnStyle() {
-      if (this.customization.theme.selected === "Dark") {
-        return "background-color: #1e242b; border: 2px double #ffffff1c;";
-      }
-      return "background-color: rgb(241, 241, 241);";
-    },
-    getHRStyle() {
-      if (this.customization.theme.selected === "Dark") {
-        return "border-top: 1px solid rgba(255, 255, 255, 0.21)";
-      }
-      return "";
     }
   },
   methods: {
-    createNewTask() {
-      let {
-        title,
-        label,
-        labelType,
-        expireAt,
-        column_id,
-        isLabeled
-      } = this.new_task;
-      let data = { title, column_id };
-      if (column_id !== null) {
-        if (expireAt !== null) {
-          expireAt = new Date(expireAt);
-          data["expireAt"] = expireAt;
-        }
-        if (label !== null && isLabeled) {
-          data["label"] = label;
-          if (labelType !== null) {
-            data["labelType"] = labelType;
-          } else {
-            data["labelType"] = "dark";
-          }
-        }
-        this.$http
-          .post("/user/tasks", data)
-          .then(res => {
-            console.log(res.data);
-            this.loadProject(this.projects.selected._id); // load project again.
-            this.resetNewTask();
-          })
-          .catch(err => {
-            console.log(err.response);
-            this.loadProject(this.projects.selected._id); // load project again.
-          });
-      } else {
-        // warning...
-      }
-    },
-    resetNewTask() {
-      this.new_task = {
-        title: "",
-        label: "",
-        labelType: null,
-        expireAt: null,
-        column_id: null,
-        isLabeled: false
-      };
-    },
     checkLocalStorage() {
       if (localStorage.theme) {
         if (this.customization.theme.options.includes(localStorage.theme)) {
@@ -496,9 +182,6 @@ export default {
           this.customization.icons.selected = false;
         }
       }
-    },
-    taskHandle(event, item) {
-      this.$refs.vueTaskContextMenu.showMenu(event, item);
     },
     taskOptionSelected(event) {
       if (event.option.slug === "delete") {
@@ -530,9 +213,6 @@ export default {
           });
       }
     },
-    columnHandle(event, item) {
-      this.$refs.vueColumnContextMenu.showMenu(event, item);
-    },
     columnOptionSelected(event) {
       if (event.option.slug === "delete") {
         this.$http
@@ -561,17 +241,6 @@ export default {
           });
       }
     },
-    updateColumnTitle(column_id, title) {
-      this.editing_component_id = null;
-      this.$http
-        .put("/user/columns", { column_id, title })
-        .then(res => {
-          console.log(res.data);
-        })
-        .catch(err => {
-          console.log(err.response);
-        });
-    },
     loadProject(project_id) {
       this.loaded = false;
       this.$http
@@ -585,47 +254,6 @@ export default {
         .catch(err => {
           console.log(err.response);
         });
-    },
-    projectSelected(selectedOption) {
-      this.loadProject(selectedOption._id);
-    },
-    getTaskName(name) {
-      return name.length > 60 ? name.slice(0, 60) + "..." : name;
-    },
-    getColumnIcon(icon) {
-      return require(`../../assets/svg/${icon}.svg`);
-    },
-    getTaskHeight(element) {
-      if (element.date || element.label) {
-        return "height: 90px";
-      } else {
-        return "height: 80px";
-      }
-    },
-    changed: function(column_id, evt) {
-      if (evt.added) {
-        let task_id = evt.added.element._id;
-        this.$http
-          .post("/user/addToColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(err => {
-            console.log(err.response);
-          });
-      } else if (evt.removed) {
-        let task_id = evt.removed.element._id;
-        this.$http
-          .post("/user/removeFromColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(err => {
-            console.log(err.response);
-          });
-      } else {
-        console.log("Unknown process.");
-      }
     }
   },
   created() {
@@ -641,12 +269,25 @@ export default {
         console.log("error occurred fetching projects.");
       }
     });
+
+    eventBus.$on("task-option-handled", data => {
+      this.$refs.vueTaskContextMenu.showMenu(data.event, data.item);
+    });
+    eventBus.$on("column-option-handled", data => {
+      this.$refs.vueColumnContextMenu.showMenu(data.event, data.item);
+    });
+    eventBus.$on("load-project", () => {
+      this.loadProject(this.projects.selected._id); // load project again.
+    });
+    eventBus.$on("load-project-with-id", id => {
+      this.loadProject(id); // load project with id
+    });
   }
 };
 </script>
 <style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
 <style src="vue-multiselect/dist/vue-multiselect.min.css"/>
-<style scoped>
+<style>
 .kanban-widget {
   padding: 0;
   margin: 5px;
@@ -696,8 +337,6 @@ export default {
   opacity: 0.5;
   background: #c8ebfb;
 }
-</style>
-<style>
 .multiselect__tags {
   background-color: #00ff0000 !important;
   border: none !important;

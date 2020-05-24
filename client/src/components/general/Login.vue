@@ -6,7 +6,7 @@
           <b-col class="col-12 col-lg-4" style="padding:0;">
             <b-card class="w-100" style="height:55vh;">
               <div class="logo p-3 text-center">
-                <img src="~@/assets/images/logo.png" style="height: 100px;" />
+                <img src="~@/assets/images/kanbant_logo.svg" style="height: 100px;" />
               </div>
               <b-form>
                 <b-form-group class="has-icon" label="Email address:">
