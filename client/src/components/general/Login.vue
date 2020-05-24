@@ -41,7 +41,12 @@
                     class="login-buttons"
                     @click.prevent="login"
                   >Login</b-button>
-                  <b-button type="submit" variant="primary" class="login-buttons">Register</b-button>
+                  <b-button
+                    type="submit"
+                    variant="primary"
+                    class="login-buttons"
+                    @click.prevent="register"
+                  >Register</b-button>
                 </b-form-group>
               </b-form>
             </b-card>
@@ -76,8 +81,48 @@ export default {
         .then(res => {
           this.isError = false;
           this.error_message = "";
-          if (res.data.message === "OK") {
+          if (res.data.status === true) {
             this.$router.push({ path: "/dashboard" });
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "You successfully logged in",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
+        })
+        .catch(err => {
+          this.isError = true;
+          this.error_message = err.response.data.message;
+        });
+    },
+    register() {
+      this.$http
+        .post("/auth/register", this.form)
+        .then(res => {
+          if (res.data.status === true) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "Project successfully created",
+              showConfirmButton: false,
+              timer: 1500
+            });
+            this.login();
+          } else {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred creating the project",
+              showConfirmButton: false,
+              timer: 1500
+            });
+            this.isError = true;
+            this.error_message = res.data.message;
           }
         })
         .catch(err => {

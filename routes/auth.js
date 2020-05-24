@@ -16,7 +16,7 @@ router.post('/local', (req, res, next) => {
             // if user authenticated maintain the session
             req.logIn(user, function () {
                 // do whatever here on successful login
-                res.status(200).json({ message: "OK" });
+                res.status(200).json({ status: true, message: "User login successful" });
             })
         }
     })(req, res, next);
@@ -39,7 +39,7 @@ router.post('/register', async (req, res, next) => {
         }
 
     } catch (err) {
-        res.status(400).json({ status: false, message: err });
+        res.status(400).json({ status: false, message: err.details[0].message });
     }
 })
 
