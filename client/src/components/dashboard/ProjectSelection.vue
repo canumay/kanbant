@@ -16,14 +16,15 @@
       v-model="projects.selected"
       track-by="_id"
       label="title"
-      placeholder
-      class="ml-4 mt-2 text-white"
-      style="width: auto; display: inline-block; text-shadow: black 0px 0px 10px;"
+      class="ml-4 mt-2"
+      placeholder="Select a project"
+      style="width: auto; display: inline-block;"
       selectLabel
       :options="projects.options"
       :searchable="true"
       :allow-empty="false"
-      :hide-selected="true"
+      deselect-label="Selected"
+      :hide-selected="false"
       @select="projectSelected"
       v-if="!isEditing"
     >
@@ -34,6 +35,9 @@
         </div>
       </template>
     </multiselect>
+    <span class="badge badge-success mr-2" v-if="!isEditing" style="font-size: 14px; cursor:pointer;">
+      <i class="fas fa-plus p-1" @click="createProject"></i>
+    </span>
     <span class="badge badge-dark mr-2" v-if="!isEditing" style="font-size: 14px; cursor:pointer;">
       <i class="fas fa-pen p-1" @click="isEditing = true"></i>
     </span>
@@ -64,6 +68,9 @@ export default {
   methods: {
     projectSelected(selectedOption) {
       eventBus.$emit("load-project-with-id", selectedOption._id); // load project
+    },
+    createProject(){
+      eventBus.$emit("create-project");
     },
     updateProjectTitle() {
       this.$http

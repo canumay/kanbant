@@ -265,7 +265,11 @@ export default {
     createProject() {
       this.$http
         .post("/user/projects", {
-          title: "New Project"
+          title:
+            "New Project " +
+            Math.random()
+              .toString()
+              .slice(2, 12)
         })
         .then(res => {
           console.log(res.data);
@@ -345,6 +349,9 @@ export default {
     eventBus.$on("load-project-with-id", id => {
       this.loadProject(id); // load project with id
     });
+    eventBus.$on("create-project", () => {
+      this.createProject();
+    });
   }
 };
 </script>
@@ -406,6 +413,7 @@ export default {
 }
 .multiselect__input,
 .multiselect__single {
+  text-shadow: black 0px 0px 10px;
   color: white;
   font-size: 25px;
   background-color: #00ff0000 !important;
@@ -419,6 +427,14 @@ export default {
 .multiselect__option--highlight:after {
   background: #2a2d2a;
   border-radius: 2px;
+}
+.multiselect__option--selected.multiselect__option--highlight {
+  background: black;
+  color: #fff;
+}
+.multiselect__option--selected.multiselect__option--highlight:after {
+  background: black;
+  color: #fff;
 }
 .slide-fade-enter-active {
   transition: all 0.5s ease;
