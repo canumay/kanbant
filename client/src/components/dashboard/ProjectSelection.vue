@@ -17,8 +17,8 @@
       track-by="_id"
       label="title"
       placeholder
-      class="ml-4 mt-2"
-      style="width: auto; display: inline-block;"
+      class="ml-4 mt-2 text-white"
+      style="width: auto; display: inline-block; text-shadow: black 0px 0px 10px;"
       selectLabel
       :options="projects.options"
       :searchable="true"

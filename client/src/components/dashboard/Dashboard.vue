@@ -8,31 +8,47 @@
     <Sidebar :customization="customization" />
     <!-- End Of Customization Sidebar -->
 
-    <!-- Project Selection -->
-    <ProjectSelection :projects="projects" />
-    <!-- End Of Project Selection -->
+    <template v-if="projects.options.length > 0">
+      <!-- Project Selection -->
+      <transition name="bounce">
+        <ProjectSelection :projects="projects" />
+      </transition>
+      <!-- End Of Project Selection -->
 
-    <!-- Columns -->
-    <transition name="fade">
-      <PerfectScrollbar class="scroll-area" v-if="loaded">
-        <b-container style="max-width: none !important;">
-          <b-row>
-            <b-col class="d-flex">
-              <b-col
-                class="col kanban-widget"
-                v-for="(column, index) in project_details.columns"
-                :key="index"
-              >
-                <!-- Column -->
-                <Column :customization="customization" :column="column" />
-                <!-- End of Column -->
+      <!-- Columns -->
+      <transition name="bounce">
+        <PerfectScrollbar class="scroll-area" v-if="loaded">
+          <b-container style="max-width: none !important;">
+            <b-row>
+              <b-col class="d-flex">
+                <b-col
+                  class="col kanban-widget"
+                  v-for="(column, index) in project_details.columns"
+                  :key="index"
+                >
+                  <!-- Column -->
+                  <Column :customization="customization" :column="column" />
+                  <!-- End of Column -->
+                </b-col>
               </b-col>
-            </b-col>
-          </b-row>
-        </b-container>
-      </PerfectScrollbar>
-    </transition>
-    <!-- End Of Columns -->
+            </b-row>
+          </b-container>
+        </PerfectScrollbar>
+      </transition>
+      <!-- End Of Columns -->
+    </template>
+    <template v-else>
+      <transition name="bounce">
+        <div class="text-center" style="margin-top: 5%;">
+          <b-img src="../../assets/svg/empty.svg" width="500" />
+          <h3
+            class="text-white"
+            style="text-shadow: black 0px 0px 10px;"
+          >Seems like you haven't got any projects</h3>
+          <b-button class="mt-2" variant="success" @click="createProject">Create Now</b-button>
+        </div>
+      </transition>
+    </template>
 
     <!-- Task Context Menu -->
     <vue-simple-context-menu
@@ -246,9 +262,25 @@ export default {
           });
       }
     },
+    createProject() {
+      this.$http
+        .post("/user/projects", {
+          title: "New Project"
+        })
+        .then(res => {
+          console.log(res.data);
+          this.getProjects();
+        })
+        .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          }
+        });
+    },
     getProjects() {
       this.$http.get("/user/projects").then(res => {
         if (res.data.status && res.data.status === true) {
+          this.projects.selected = {};
           this.projects.options = res.data.results;
           if (this.projects.options.length > 0) {
             this.projects.selected = res.data.results[0];
@@ -389,10 +421,10 @@ export default {
   border-radius: 2px;
 }
 .slide-fade-enter-active {
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
 }
 .slide-fade-leave-active {
-  transition: all 0.1s cubic-bezier(1, 0.5, 0.8, 1);
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
 }
 .slide-fade-enter, .slide-fade-leave-to
 /* .slide-fade-leave-active below version 2.1.8 */ {
@@ -401,9 +433,26 @@ export default {
 }
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.5s;
+  transition: opacity 0.3s;
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+.bounce-enter-active {
+  animation: bounce-in 0.5s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.5s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 </style>
