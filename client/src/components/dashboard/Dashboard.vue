@@ -253,6 +253,19 @@ export default {
           });
       }
     },
+    getProjects() {
+      this.$http.get("/user/projects").then(res => {
+        if (res.data.status && res.data.status === true) {
+          this.projects.options = res.data.results;
+          if (this.projects.options.length > 0) {
+            this.projects.selected = res.data.results[0];
+            this.loadProject(res.data.results[0]._id);
+          }
+        } else {
+          console.log("error occurred fetching projects.");
+        }
+      });
+    },
     loadProject(project_id) {
       // this.loaded = false; TODO: Deprecated for now.
       this.$http
@@ -266,6 +279,8 @@ export default {
         .catch(err => {
           if (err.response.status === 401) {
             this.$router.push("/login");
+          } if(err.response.status === 404){
+            this.getProjects();
           }
           console.log(err.response);
         });
@@ -273,17 +288,7 @@ export default {
   },
   created() {
     this.checkLocalStorage();
-    this.$http.get("/user/projects").then(res => {
-      if (res.data.status && res.data.status === true) {
-        this.projects.options = res.data.results;
-        if (this.projects.options.length > 0) {
-          this.projects.selected = res.data.results[0];
-          this.loadProject(res.data.results[0]._id);
-        }
-      } else {
-        console.log("error occurred fetching projects.");
-      }
-    });
+    this.getProjects();
 
     eventBus.$on("task-option-handled", data => {
       this.$refs.vueTaskContextMenu.showMenu(data.event, data.item);
