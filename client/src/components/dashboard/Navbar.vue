@@ -13,10 +13,9 @@
           <b-nav-item-dropdown right>
             <!-- Using 'button-content' slot -->
             <template v-slot:button-content>
-              <em>Can Umay</em>
+              <em>{{user_email}}</em>
             </template>
-            <b-dropdown-item href="#">Profile</b-dropdown-item>
-            <b-dropdown-item href="#">Sign Out</b-dropdown-item>
+            <b-dropdown-item @click="logout()">Sign Out</b-dropdown-item>
           </b-nav-item-dropdown>
         </b-navbar-nav>
       </b-collapse>
@@ -25,7 +24,23 @@
 </template>
 
 <script>
-export default {};
+export default {
+  props: ["user_email"],
+  methods: {
+    logout() {
+      this.$http
+        .get("/auth/logout")
+        .then(() => {
+          this.$router.push('/login');
+        })
+        .catch(err => {
+          if (err.response.status === 500) {
+            this.$router.push("/login");
+          }
+        });
+    }
+  }
+};
 </script>
 
 <style>

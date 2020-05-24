@@ -1,7 +1,7 @@
 <template>
   <div class="h-100" :style="getBackgroundCustomization">
     <!-- Navbar -->
-    <Navbar />
+    <Navbar :user_email="user_email" />
     <!-- End Of Navbar -->
 
     <!-- Customization Sidebar -->
@@ -134,7 +134,8 @@ export default {
             { text: "No", value: false }
           ]
         }
-      }
+      },
+      user_email: ""
     };
   },
   computed: {
@@ -275,7 +276,26 @@ export default {
         .catch(err => {
           if (err.response.status === 401) {
             this.$router.push("/login");
-          } if(err.response.status === 404){
+          }
+          if (err.response.status === 404) {
+            this.getProjects();
+          }
+          console.log(err.response);
+        });
+    },
+    loadUserInformations() {
+      this.$http
+        .get("/auth/status")
+        .then(res => {
+          if (res.data.status === true) {
+            this.user_email = res.data.user;
+          }
+        })
+        .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          }
+          if (err.response.status === 404) {
             this.getProjects();
           }
           console.log(err.response);
@@ -284,6 +304,7 @@ export default {
   },
   created() {
     this.checkLocalStorage();
+    this.loadUserInformations();
     this.getProjects();
 
     eventBus.$on("task-option-handled", data => {

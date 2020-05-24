@@ -45,10 +45,19 @@ router.post('/register', async (req, res, next) => {
 
 router.get('/status', async (req, res, next) => {
     if (req.user) {
-        res.status(200).json({ status: true });
+        res.status(200).json({ status: true, user: req.user.email });
     } else {
         res.status(200).json({ status: false });
         // req.redirect('/login');
+    }
+})
+
+router.get('/logout', async (req, res) => {
+    if (req.user) {
+        req.logout();
+        res.status(200).json({ status: true, message: 'Unauthorized' })
+    } else {
+        res.status(500).json({ status: false, message: 'Internal Server Error' })
     }
 })
 
