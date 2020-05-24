@@ -105,10 +105,6 @@ export default {
           slug: "clone"
         },
         {
-          name: "Edit",
-          slug: "edit"
-        },
-        {
           name: "Delete",
           slug: "delete"
         }
