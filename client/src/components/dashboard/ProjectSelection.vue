@@ -31,7 +31,6 @@
         <div class="option__desc">
           <i class="fas fa-tasks" style="margin-right: 10px;"></i>
           <span class="option__title">{{ props.option.title }}</span>
-          <span :class="`badge badge-${props.option.labelType} float-right`">{{props.option.label}}</span>
         </div>
       </template>
     </multiselect>
