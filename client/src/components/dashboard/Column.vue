@@ -46,7 +46,23 @@
 
       <!-- Column Icon -->
       <template v-if="!customization.icons.selected">
-        <b-img :src="getColumnIcon(column.icon)" />
+        <b-img
+          :src="getColumnIcon(column.icon)"
+          @dblclick="changeComponentIconStatus(column._id)"
+          class="mb-3"
+        />
+        <div v-if="edit_component.id_for_icon === column._id">
+          <i
+            class="fas fa-arrow-circle-left"
+            @click="updateColumnIcon('left', column.icon, column._id)"
+            style="cursor: pointer; position: absolute;left: 5%; top:150px; font-size: 25px;"
+          ></i>
+          <i
+            class="fas fa-arrow-circle-right"
+            @click="updateColumnIcon('right',column.icon, column._id)"
+            style="cursor: pointer; position: absolute;right: 5%; top:150px; font-size: 25px;"
+          ></i>
+        </div>
       </template>
       <!-- End of Column Icon -->
     </template>
@@ -148,9 +164,10 @@ export default {
   },
   data() {
     return {
+      available_icons: ["todo", "inprogress", "done"],
       edit_component: {
         id_for_title: "",
-        id_for_icon: ""
+        id_for_icon: null
       },
       new_task: {
         title: "",
@@ -269,6 +286,43 @@ export default {
         .put("/user/columns", { column_id, title })
         .then(res => {
           console.log(res.data);
+        })
+        .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          }
+          console.log(err.response);
+        });
+    },
+    changeComponentIconStatus(column_id) {
+      if (this.edit_component.id_for_icon === null) {
+        this.edit_component.id_for_icon = column_id;
+      } else {
+        this.edit_component.id_for_icon = null;
+      }
+    },
+    updateColumnIcon(cursor_direction, current_icon, column_id) {
+      let index = this.available_icons.indexOf(current_icon);
+      let icon = "";
+      if (cursor_direction === "right") {
+        if (index < this.available_icons.length - 1) {
+          icon = this.available_icons[index + 1];
+        } else {
+          icon = this.available_icons[0];
+        }
+      } else {
+        if (index === 0) {
+          icon = this.available_icons[this.available_icons.length - 1];
+        } else {
+          icon = this.available_icons[index - 1];
+        }
+      }
+
+      this.$http
+        .put("/user/columns", { column_id, icon })
+        .then(res => {
+          console.log(res.data);
+          eventBus.$emit("load-project"); // load project again.
         })
         .catch(err => {
           if (err.response.status === 401) {
