@@ -9,7 +9,7 @@ import axios from 'axios';
 import moment from 'vue-moment';
 import 'vue-simple-context-menu/dist/vue-simple-context-menu.css'
 import VueSimpleContextMenu from 'vue-simple-context-menu'
-
+import VueSweetalert2 from 'vue-sweetalert2';
 const axiosInstance = axios.create({
   withCredentials: true,
   baseURL: process.env.VUE_APP_BASE_URL
@@ -22,6 +22,8 @@ Vue.use(VueRouter);
 Vue.use(moment);
 
 Vue.component('vue-simple-context-menu', VueSimpleContextMenu)
+
+Vue.use(VueSweetalert2);
 
 Vue.prototype.$http = axiosInstance;
 

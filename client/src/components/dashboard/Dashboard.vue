@@ -201,7 +201,25 @@ export default {
         this.$http
           .delete("/user/tasks", { params: { task_id: event.item._id } })
           .then(res => {
-            console.log(res.data);
+            if (res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Task successfully deleted",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: "Error occurred deleting the task",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
@@ -220,7 +238,25 @@ export default {
             column_id
           })
           .then(res => {
-            console.log(res.data);
+            if (res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Task successfully cloned",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: "Error occurred cloning the task",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
@@ -235,7 +271,25 @@ export default {
         this.$http
           .delete("/user/columns", { params: { column_id: event.item._id } })
           .then(res => {
-            console.log(res.data);
+            if (res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Column successfully deleted",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: "Error occurred deleting the column",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
@@ -252,7 +306,25 @@ export default {
             project_id: this.projects.selected._id
           })
           .then(res => {
-            console.log(res.data);
+            if (res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Column successfully cloned",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: "Error occurred cloning the column",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
@@ -263,23 +335,62 @@ export default {
       }
     },
     createProject() {
-      this.$http
-        .post("/user/projects", {
-          title:
-            "New Project " +
-            Math.random()
-              .toString()
-              .slice(2, 12)
-        })
-        .then(res => {
-          console.log(res.data);
-          this.getProjects();
-        })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push("/login");
-          }
-        });
+      this.$swal({
+        title: "Are you sure?",
+        text: "Do you really want to create a new project?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, create it!"
+      }).then(result => {
+        if (result.value) {
+          this.$http
+            .post("/user/projects", {
+              title:
+                "Project " +
+                Math.random()
+                  .toString()
+                  .slice(2, 7)
+            })
+            .then(res => {
+              if (res.data.status === true) {
+                this.$swal({
+                  position: "bottom-end",
+                  icon: "success",
+                  toast: true,
+                  title: "Project successfully created",
+                  showConfirmButton: false,
+                  timer: 1500
+                });
+              } else {
+                this.$swal({
+                  position: "bottom-end",
+                  icon: "error",
+                  toast: true,
+                  title: "Error occurred creating the project",
+                  showConfirmButton: false,
+                  timer: 1500
+                });
+              }
+              this.getProjects();
+            })
+            .catch(err => {
+              if (err.response.status === 401) {
+                this.$router.push("/login");
+              } else {
+                this.swal({
+                  position: "bottom-end",
+                  icon: "error",
+                  toast: true,
+                  title: "Error occurred creating the project",
+                  showConfirmButton: false,
+                  timer: 500
+                });
+              }
+            });
+        }
+      });
     },
     getProjects() {
       this.$http.get("/user/projects").then(res => {
@@ -470,5 +581,8 @@ export default {
   100% {
     transform: scale(1);
   }
+}
+body.swal2-height-auto {
+  height: 100% !important;
 }
 </style>

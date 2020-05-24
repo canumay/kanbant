@@ -263,7 +263,25 @@ export default {
         this.$http
           .post("/user/tasks", data)
           .then(res => {
-            console.log(res.data);
+            if (res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Task successfully created",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: "Error occurred creating the task",
+                showConfirmButton: false,
+                timer: 1500
+              });
+            }
             eventBus.$emit("load-project"); // load project again.
             this.resetNewTask();
           })
@@ -297,7 +315,25 @@ export default {
       this.$http
         .put("/user/columns", { column_id, title })
         .then(res => {
-          console.log(res.data);
+          if (res.data.status === true) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "Column title updated",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred updating column title",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
         })
         .catch(err => {
           if (err.response.status === 401) {
@@ -331,8 +367,7 @@ export default {
 
       this.$http
         .put("/user/columns", { column_id, icon })
-        .then(res => {
-          console.log(res.data);
+        .then(() => {
           eventBus.$emit("load-project"); // load project again.
         })
         .catch(err => {

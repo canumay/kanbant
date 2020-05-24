@@ -35,7 +35,11 @@
         </div>
       </template>
     </multiselect>
-    <span class="badge badge-success mr-2" v-if="!isEditing" style="font-size: 14px; cursor:pointer;">
+    <span
+      class="badge badge-success mr-2"
+      v-if="!isEditing"
+      style="font-size: 14px; cursor:pointer;"
+    >
       <i class="fas fa-plus p-1" @click="createProject"></i>
     </span>
     <span class="badge badge-dark mr-2" v-if="!isEditing" style="font-size: 14px; cursor:pointer;">
@@ -69,7 +73,7 @@ export default {
     projectSelected(selectedOption) {
       eventBus.$emit("load-project-with-id", selectedOption._id); // load project
     },
-    createProject(){
+    createProject() {
       eventBus.$emit("create-project");
     },
     updateProjectTitle() {
@@ -79,7 +83,25 @@ export default {
           title: this.projects.selected.title
         })
         .then(res => {
-          console.log(res.data);
+          if (res.data.status === true) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "Project title successfully updated",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred updating project title",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
           eventBus.$emit("load-project-with-id", this.projects.selected._id); // load project
           this.isEditing = false;
         })
@@ -90,19 +112,49 @@ export default {
         });
     },
     deleteProject() {
-      this.$http
-        .delete("/user/projects", {
-          params: { project_id: this.projects.selected._id }
-        })
-        .then(res => {
-          console.log(res.data);
-          eventBus.$emit("load-project"); // loads random projecs
-        })
-        .catch(err => {
-          if (err.response.status === 401) {
-            this.$router.push("/login");
-          }
-        });
+      this.$swal({
+        title: "Are you sure?",
+        text: "Do you really want to delete the project?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, delete it!"
+      }).then(result => {
+        if (result.value) {
+          this.$http
+            .delete("/user/projects", {
+              params: { project_id: this.projects.selected._id }
+            })
+            .then(res => {
+              if (res.data.status === true) {
+                this.$swal({
+                  position: "bottom-end",
+                  icon: "success",
+                  toast: true,
+                  title: "Project successfully deleted",
+                  showConfirmButton: false,
+                  timer: 1500
+                });
+              } else {
+                this.$swal({
+                  position: "bottom-end",
+                  icon: "error",
+                  toast: true,
+                  title: "Error occurred deleting the project",
+                  showConfirmButton: false,
+                  timer: 1500
+                });
+              }
+              eventBus.$emit("load-project"); // loads random projecs
+            })
+            .catch(err => {
+              if (err.response.status === 401) {
+                this.$router.push("/login");
+              }
+            });
+        }
+      });
     }
   }
 };
