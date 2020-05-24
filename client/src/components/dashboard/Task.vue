@@ -79,6 +79,9 @@ export default {
             console.log(res.data);
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       } else if (evt.removed) {
@@ -89,6 +92,9 @@ export default {
             console.log(res.data);
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       } else {

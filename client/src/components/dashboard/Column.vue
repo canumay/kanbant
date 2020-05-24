@@ -53,7 +53,7 @@
 
     <!-- Column Body -->
     <template>
-        <Task :tasks="column.tasks" :column_id="column._id" :customization="customization" />
+      <Task :tasks="column.tasks" :column_id="column._id" :customization="customization" />
     </template>
     <!-- End Of Column Body -->
 
@@ -238,8 +238,10 @@ export default {
             this.resetNewTask();
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
-            eventBus.$emit("load-project"); // load project again.
           });
       } else {
         // warning...
@@ -269,6 +271,9 @@ export default {
           console.log(res.data);
         })
         .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          }
           console.log(err.response);
         });
     }

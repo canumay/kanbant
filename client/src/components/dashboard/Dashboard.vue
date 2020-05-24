@@ -192,6 +192,9 @@ export default {
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
@@ -209,6 +212,9 @@ export default {
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       }
@@ -222,6 +228,9 @@ export default {
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       } else if (event.option.slug === "clone") {
@@ -237,6 +246,9 @@ export default {
             this.loadProject(this.projects.selected._id); // load project again.
           })
           .catch(err => {
+            if (err.response.status === 401) {
+              this.$router.push("/login");
+            }
             console.log(err.response);
           });
       }
@@ -252,6 +264,9 @@ export default {
           this.loaded = true;
         })
         .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          }
           console.log(err.response);
         });
     }
@@ -368,8 +383,9 @@ export default {
   transform: translateX(10px);
   opacity: 0;
 }
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .5s;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;

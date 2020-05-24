@@ -43,7 +43,7 @@ router.post('/register', async (req, res, next) => {
     }
 })
 
-router.get('/isauth', async (req, res, next) => {
+router.get('/status', async (req, res, next) => {
     if (req.user) {
         res.status(200).json({ status: true });
     } else {
