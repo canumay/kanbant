@@ -367,7 +367,26 @@ export default {
 
       this.$http
         .put("/user/columns", { column_id, icon })
-        .then(() => {
+        .then(res => {
+          if (res.data.status === true) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "Column icon successfully updated",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred updating column icon",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
           eventBus.$emit("load-project"); // load project again.
         })
         .catch(err => {
