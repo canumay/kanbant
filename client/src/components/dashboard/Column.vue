@@ -164,7 +164,20 @@ export default {
   },
   data() {
     return {
-      available_icons: ["todo", "inprogress", "done"],
+      available_icons: [
+        "todo",
+        "inprogress",
+        "done",
+        "programming",
+        "mobile-testing",
+        "usability-testing",
+        "mobile-messages",
+        "review",
+        "code-review",
+        "survey",
+        "report",
+        "design-notes"
+      ],
       edit_component: {
         id_for_title: "",
         id_for_icon: null
