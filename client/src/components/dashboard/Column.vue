@@ -53,17 +53,7 @@
 
     <!-- Column Body -->
     <template>
-      <draggable
-        class="list-group text-left mt-4"
-        :list="column.tasks"
-        style="cursor:move; min-height: 100px;"
-        group="people"
-        ghost-class="ghost"
-        @change="changed(column._id, $event)"
-        :animation="200"
-      >
         <Task :tasks="column.tasks" :column_id="column._id" :customization="customization" />
-      </draggable>
     </template>
     <!-- End Of Column Body -->
 
@@ -150,13 +140,11 @@
 
 <script>
 import eventBus from "../../eventBus";
-import draggable from "vuedraggable";
 import Task from "./Task";
 export default {
   props: ["customization", "column"],
   components: {
-    Task,
-    draggable
+    Task
   },
   data() {
     return {
@@ -266,31 +254,6 @@ export default {
         column_id: null,
         isLabeled: false
       };
-    },
-    changed: function(column_id, evt) {
-      if (evt.added) {
-        let task_id = evt.added.element._id;
-        this.$http
-          .post("/user/addToColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(err => {
-            console.log(err.response);
-          });
-      } else if (evt.removed) {
-        let task_id = evt.removed.element._id;
-        this.$http
-          .post("/user/removeFromColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(err => {
-            console.log(err.response);
-          });
-      } else {
-        console.log("Unknown process.");
-      }
     },
     columnHandle(event, item) {
       eventBus.$emit("column-option-handled", { event, item });
