@@ -1,12 +1,24 @@
-<img src="readme-files/logo.png" alt="drawing" width="300"/>
+<img src="readme-files/logo.png" alt="logo" width="300"/>
 
 > Open Source Kanban Board project built with Vue.js, Node.js, Express.js and MongoDB
 
 Kanbant's motto is to make Kanban simple again, so you won't see any complicated pages anymore, just your tasks, and that's it.
 
+|  Creating a task | Dragging a task  |
+| ------------- | ------------- |
+|<img src="readme-files/task-creating.gif" width="400"/>   | <img src="readme-files/task-dragging.gif" width="400"/>  |
+
+|  Cloning a task | Cloning a column  |
+| ------------- | ------------- |
+|<img src="readme-files/task-cloning.gif" width="400"/>  | <img src="readme-files/column-cloning-updating.gif" width="400"/>  |
+
 ## Screenshots
 
-
+<img src="readme-files/kanbant-login.png" width="800"/>
+<img src="readme-files/kanbant-dashboard.png" width="800"/>
+<img src="readme-files/new-task.png" width="800"/>
+<img src="readme-files/customization.png" width="800"/>
+<img src="readme-files/dark-mode.png" width="800"/>
 
 
 ## Development setup
@@ -62,7 +74,7 @@ Distributed under the MIT license. See ``LICENSE`` for more information.
 
 ## Contributing
 
-1. Fork it (<https://github.com/yourname/yourproject/fork>)
+1. Fork it
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Commit your changes (`git commit -am 'Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)
