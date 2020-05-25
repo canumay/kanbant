@@ -1,0 +1,4 @@
+module.exports = {
+    PROJECT_COUNT_PER_USER: 3,
+    COLUMN_COUNT_PER_PROJECT: 7
+}
