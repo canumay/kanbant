@@ -69,6 +69,7 @@ typings/
 .yarn-integrity
 
 .env.production
+.env
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

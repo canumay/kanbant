@@ -1,4 +1,3 @@
-var config = require('./config');
 var mongoose = require('mongoose');
 const emoji = require('node-emoji');
 const express = require('express');
@@ -8,6 +7,8 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const cors = require('cors')
 const history = require('connect-history-api-fallback');
+require('dotenv').config()
+var config = require('./config');
 
 var app = express();
 
@@ -59,6 +60,7 @@ mongoose.connect(config.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopolog
     })
 
 mongoose.connection.on('connected', res => {
+    console.log(process.env.MONGO_DB_URI)
     console.log(`${emoji.get(':heavy_check_mark:')}  MongoDB connection is successfully established.`);
     app.listen(config.PORT, () => {
         console.log(`${emoji.get(':heavy_check_mark:')}  Kanbant listening at ${config.URL}`);
