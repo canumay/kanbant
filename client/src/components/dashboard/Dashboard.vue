@@ -20,7 +20,7 @@
         <PerfectScrollbar class="scroll-area" v-if="loaded">
           <b-container style="max-width: none !important;">
             <b-row>
-              <b-col class="d-flex">
+              <div class="d-flex">
                 <b-col
                   class="col kanban-widget"
                   v-for="(column, index) in project_details.columns"
@@ -30,7 +30,14 @@
                   <Column :customization="customization" :column="column" />
                   <!-- End of Column -->
                 </b-col>
-              </b-col>
+              </div>
+              <span
+                class="badge badge-info ml-2"
+                style="height: fit-content;font-size: 20px;margin-top: 10px; cursor:pointer;"
+                @click="createNewColumn()"
+              >
+                <i class="fas fa-plus"></i>
+              </span>
             </b-row>
           </b-container>
         </PerfectScrollbar>
@@ -161,7 +168,21 @@ export default {
           options: ["fade", "slide-fade", "bounce"]
         }
       },
-      user_email: ""
+      user_email: "",
+      available_icons: [
+        "todo",
+        "inprogress",
+        "done",
+        "programming",
+        "mobile-testing",
+        "usability-testing",
+        "mobile-messages",
+        "review",
+        "code-review",
+        "survey",
+        "report",
+        "design-notes"
+      ]
     };
   },
   computed: {
@@ -199,7 +220,11 @@ export default {
         }
       }
       if (localStorage.animations) {
-        if (this.customization.animations.options.includes(localStorage.animations)) {
+        if (
+          this.customization.animations.options.includes(
+            localStorage.animations
+          )
+        ) {
           this.customization.animations.selected = localStorage.animations;
         }
       }
@@ -280,6 +305,57 @@ export default {
             }
           });
       }
+    },
+    getRandomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    },
+    createNewColumn() {
+      this.$http
+        .post("/user/columns", {
+          project_id: this.projects.selected._id,
+          icon: this.available_icons[this.getRandomInt(this.available_icons.length)],
+          title:
+            "Column " +
+            Math.random()
+              .toString()
+              .slice(2, 5)
+        })
+        .then(res => {
+          if (res.data.status === true) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "success",
+              toast: true,
+              title: "Column successfully created",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred creating the column",
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
+          this.loadProject(this.projects.selected._id);
+        })
+        .catch(err => {
+          if (err.response.status === 401) {
+            this.$router.push("/login");
+          } else {
+            this.swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: "Error occurred creating the column",
+              showConfirmButton: false,
+              timer: 500
+            });
+          }
+        });
     },
     columnOptionSelected(event) {
       if (event.option.slug === "delete") {
