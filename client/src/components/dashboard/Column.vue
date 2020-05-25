@@ -288,6 +288,15 @@ export default {
           .catch(err => {
             if (err.response.status === 401) {
               this.$router.push("/login");
+            } else if (err.response.status === 429) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: `${err.response.data.message}`,
+                showConfirmButton: false,
+                timer: 2000
+              });
             }
           });
       } else {

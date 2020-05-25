@@ -239,7 +239,7 @@ export default {
     taskOptionSelected(event) {
       if (event.option.slug === "delete") {
         this.$http
-          .delete("/user/tasks", { params: { task_id: event.item._id } })
+          .delete("/user/tasks", { params: { task_id: event.item._id, column_id: event.item.column_id } })
           .then(res => {
             if (res.data.status === true) {
               this.$swal({
@@ -302,6 +302,15 @@ export default {
           .catch(err => {
             if (err.response.status === 401) {
               this.$router.push("/login");
+            } else if (err.response.status === 429) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: `${err.response.data.message}`,
+                showConfirmButton: false,
+                timer: 2000
+              });
             }
           });
       }
@@ -313,7 +322,9 @@ export default {
       this.$http
         .post("/user/columns", {
           project_id: this.projects.selected._id,
-          icon: this.available_icons[this.getRandomInt(this.available_icons.length)],
+          icon: this.available_icons[
+            this.getRandomInt(this.available_icons.length)
+          ],
           title:
             "Column " +
             Math.random()
@@ -345,8 +356,17 @@ export default {
         .catch(err => {
           if (err.response.status === 401) {
             this.$router.push("/login");
+          } else if (err.response.status === 429) {
+            this.$swal({
+              position: "bottom-end",
+              icon: "error",
+              toast: true,
+              title: `${err.response.data.message}`,
+              showConfirmButton: false,
+              timer: 2000
+            });
           } else {
-            this.swal({
+            this.$swal({
               position: "bottom-end",
               icon: "error",
               toast: true,
@@ -359,8 +379,9 @@ export default {
     },
     columnOptionSelected(event) {
       if (event.option.slug === "delete") {
+        console.log(event.item);
         this.$http
-          .delete("/user/columns", { params: { column_id: event.item._id } })
+          .delete("/user/columns", { params: { column_id: event.item._id, project_id: this.projects.selected._id } })
           .then(res => {
             if (res.data.status === true) {
               this.$swal({
@@ -421,6 +442,15 @@ export default {
           .catch(err => {
             if (err.response.status === 401) {
               this.$router.push("/login");
+            } else if (err.response.status === 429) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "error",
+                toast: true,
+                title: `${err.response.data.message}`,
+                showConfirmButton: false,
+                timer: 2000
+              });
             }
           });
       }
@@ -469,14 +499,23 @@ export default {
             .catch(err => {
               if (err.response.status === 401) {
                 this.$router.push("/login");
+              } else if (err.response.status === 429) {
+                this.$swal({
+                  position: "bottom-end",
+                  icon: "error",
+                  toast: true,
+                  title: `${err.response.data.message}`,
+                  showConfirmButton: false,
+                  timer: 2000
+                });
               } else {
-                this.swal({
+                this.$swal({
                   position: "bottom-end",
                   icon: "error",
                   toast: true,
                   title: "Error occurred creating the project",
                   showConfirmButton: false,
-                  timer: 500
+                  timer: 2000
                 });
               }
             });
