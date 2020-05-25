@@ -239,7 +239,9 @@ export default {
     taskOptionSelected(event) {
       if (event.option.slug === "delete") {
         this.$http
-          .delete("/user/tasks", { params: { task_id: event.item._id, column_id: event.item.column_id } })
+          .delete("/user/tasks", {
+            params: { task_id: event.item._id, column_id: event.item.column_id }
+          })
           .then(res => {
             if (res.data.status === true) {
               this.$swal({
@@ -381,7 +383,12 @@ export default {
       if (event.option.slug === "delete") {
         console.log(event.item);
         this.$http
-          .delete("/user/columns", { params: { column_id: event.item._id, project_id: this.projects.selected._id } })
+          .delete("/user/columns", {
+            params: {
+              column_id: event.item._id,
+              project_id: this.projects.selected._id
+            }
+          })
           .then(res => {
             if (res.data.status === true) {
               this.$swal({
@@ -579,10 +586,18 @@ export default {
     this.getProjects();
 
     eventBus.$on("task-option-handled", data => {
-      this.$refs.vueTaskContextMenu.showMenu(data.event, data.item);
+      try {
+        this.$refs.vueTaskContextMenu.showMenu(data.event, data.item);
+      } catch (e) {
+        console.log("Task context menu not initialized yet");
+      }
     });
     eventBus.$on("column-option-handled", data => {
-      this.$refs.vueColumnContextMenu.showMenu(data.event, data.item);
+      try {
+        this.$refs.vueColumnContextMenu.showMenu(data.event, data.item);
+      } catch (e) {
+        console.log("Column context menu not initialized yet");
+      }
     });
     eventBus.$on("load-project", () => {
       this.loadProject(this.projects.selected._id); // load project again.
