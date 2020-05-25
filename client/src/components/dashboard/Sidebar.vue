@@ -24,6 +24,12 @@
             :options="customization.icons.options"
           ></b-form-radio-group>
         </b-form-group>
+        <b-form-group label="Animations:">
+          <b-form-radio-group
+            v-model="customization.animations.selected"
+            :options="customization.animations.options"
+          ></b-form-radio-group>
+        </b-form-group>
         <b-form-group label="Background:">
           <b-form-radio-group
             v-model="customization.background.selected"

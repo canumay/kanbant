@@ -10,13 +10,13 @@
 
     <template v-if="projects.options.length > 0">
       <!-- Project Selection -->
-      <transition name="bounce">
+      <transition :name="customization.animations.selected">
         <ProjectSelection :projects="projects" />
       </transition>
       <!-- End Of Project Selection -->
 
       <!-- Columns -->
-      <transition name="bounce">
+      <transition :name="customization.animations.selected">
         <PerfectScrollbar class="scroll-area" v-if="loaded">
           <b-container style="max-width: none !important;">
             <b-row>
@@ -38,7 +38,7 @@
       <!-- End Of Columns -->
     </template>
     <template v-else>
-      <transition name="bounce">
+      <transition :name="customization.animations.selected">
         <div class="text-center" style="margin-top: 5%;">
           <b-img src="../../assets/svg/empty.svg" width="500" />
           <h3
@@ -105,6 +105,12 @@ export default {
         localStorage.icons = val;
       },
       deep: true
+    },
+    "customization.animations.selected": {
+      handler: val => {
+        localStorage.animations = val;
+      },
+      deep: true
     }
   },
   data() {
@@ -131,7 +137,7 @@ export default {
           options: ["Dark", "Light"]
         },
         background: {
-          selected: "Random",
+          selected: "Valley",
           options: [
             "Random",
             "Solid Dark",
@@ -149,6 +155,10 @@ export default {
             { text: "Yes", value: true },
             { text: "No", value: false }
           ]
+        },
+        animations: {
+          selected: "bounce",
+          options: ["fade", "slide-fade", "bounce"]
         }
       },
       user_email: ""
@@ -186,6 +196,11 @@ export default {
       if (localStorage.bg) {
         if (this.customization.background.options.includes(localStorage.bg)) {
           this.customization.background.selected = localStorage.bg;
+        }
+      }
+      if (localStorage.animations) {
+        if (this.customization.animations.options.includes(localStorage.animations)) {
+          this.customization.animations.selected = localStorage.animations;
         }
       }
       if (localStorage.icons) {
