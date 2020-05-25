@@ -140,11 +140,11 @@ export default {
       ],
       customization: {
         theme: {
-          selected: "Dark",
+          selected: "Light",
           options: ["Dark", "Light"]
         },
         background: {
-          selected: "Valley",
+          selected: "Mountain",
           options: [
             "Random",
             "Solid Dark",
