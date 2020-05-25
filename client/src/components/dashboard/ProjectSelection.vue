@@ -17,7 +17,7 @@
       track-by="_id"
       label="title"
       class="ml-4 mt-2"
-      placeholder="Select a project"
+      placeholder=""
       style="width: auto; display: inline-block;"
       selectLabel
       :options="projects.options"

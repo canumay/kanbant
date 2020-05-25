@@ -1,7 +1,9 @@
 <template>
   <div>
     <b-navbar toggleable="lg" type="dark" style="background-color: rgba(0, 0, 0, 0.32) !important;">
-      <b-navbar-brand style="width: 100%;text-align: center;">Kanbant</b-navbar-brand>
+      <b-navbar-brand style="width: 100%;text-align: center;">
+        <b-img src="../../assets/images/kanbant_logo_nav.svg" height="35"></b-img>
+      </b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
