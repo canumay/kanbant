@@ -41,8 +41,8 @@ const router = new express.Router();
 router.use('/api', require('./routes/api'));
 app.use(router);
 
-// Middleware for serving '/dist' directory
-const staticFileMiddleware = express.static('./client/dist');
+// Middleware for serving '/public' directory
+const staticFileMiddleware = express.static('./public');
 
 // 1st call for unredirected requests 
 app.use(staticFileMiddleware);
