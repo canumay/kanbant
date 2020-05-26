@@ -73,6 +73,16 @@ router.delete('/projects', isLoggedIn, async (req, res, next) => {
             if (mongoose.Types.ObjectId.isValid(req.query.project_id)) { // Check project id is valid
                 let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.query.project_id) });
                 if (isProjectAccessibleByUser === true) {
+                    // Delete project's columns
+                    let columns = await Project.findById(req.query.project_id, { columns: 1, _id: 0 });
+                    columns['columns'].forEach(async column_id => {
+                        // Delete column's tasks.
+                        let tasks = await Column.findById(column_id, { tasks: 1, _id: 0 });
+                        tasks['tasks'].forEach(async task_id => {
+                            await Task.findByIdAndDelete(task_id);
+                        });
+                        await Column.findByIdAndDelete(column_id);
+                    });
                     let deletedProject = await Project.deleteOne({ _id: req.query.project_id });
                     if (deletedProject.deletedCount && deletedProject.deletedCount > 0) {
                         await User.findByIdAndUpdate(req.user._id, { "$pull": { "projects": req.query.project_id } }, { "new": true, "upsert": true });
@@ -206,6 +216,11 @@ router.delete('/columns', isLoggedIn, async (req, res, next) => {
                                 isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.query.column_id) });
                             })
                             if (isColumnAccessibleByUser === true) {
+                                // Delete column's tasks.
+                                let tasks = await Column.findById(req.query.column_id, { tasks: 1, _id: 0 });
+                                tasks['tasks'].forEach(async task_id => {
+                                    await Task.findByIdAndDelete(task_id);
+                                });
                                 let deletedColumn = await Column.deleteOne({ _id: req.query.column_id });
                                 if (deletedColumn.deletedCount && deletedColumn.deletedCount > 0) {
                                     await Project.findByIdAndUpdate(req.query.project_id, { "$pull": { "columns": req.query.column_id } }, { "new": true, "upsert": true });
