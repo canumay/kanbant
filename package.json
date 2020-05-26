@@ -1,0 +1,45 @@
+{
+  "name": "kanbant",
+  "version": "1.0.0",
+  "description": "Open Source Kanban Board Project written in Node.js, Vue.js and MongoDB",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "watch": "node --inspect index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/canumay/kanbant.git"
+  },
+  "keywords": [
+    "kanban",
+    "board"
+  ],
+  "author": "Can Umay",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/canumay/kanbant/issues"
+  },
+  "homepage": "https://github.com/canumay/kanbant#readme",
+  "devDependencies": {
+    "jest": "^26.0.1",
+    "nodemon": "^2.0.4"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "connect-history-api-fallback": "^1.6.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.1",
+    "joi": "^14.3.1",
+    "mongoose": "^5.9.14",
+    "mongoose-timestamp": "^0.6.0",
+    "node-emoji": "^1.10.0",
+    "passport": "^0.4.1",
+    "passport-local": "^1.0.0"
+  }
+}
