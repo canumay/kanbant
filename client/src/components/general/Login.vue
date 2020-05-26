@@ -3,9 +3,9 @@
     <b-container class="h-100">
       <b-row class="h-100">
         <b-col class="d-flex justify-content-center align-items-center">
-          <b-col class="col-12 col-lg-4" style="padding:0;">
-            <b-card class="w-100" style="height:55vh;">
-              <div class="logo p-3 text-center">
+          <b-col class="col-12 col-lg-6 col-xl-4" style="padding:0;">
+            <b-card style="height: 500px;">
+              <div class="logo p-3 text-center" style="overflow-y: hidden;">
                 <img src="~@/assets/images/kanbant_logo.svg" style="height: 100px;" />
               </div>
               <b-form>
@@ -51,8 +51,8 @@
               </b-form>
             </b-card>
           </b-col>
-          <b-col class="d-none d-lg-block col-lg-8" style="padding:0;">
-            <b-card class="w-100" style="height:55vh;background-color: #17a2b869;">
+          <b-col class="d-none d-xl-block col-xl-8" style="padding:0;">
+            <b-card style="background-color: #17a2b869; height: 500px;">
               <img src="~@/assets/svg/login.svg" class="todo-img" />
             </b-card>
           </b-col>
@@ -136,10 +136,12 @@ export default {
 <style scoped>
 .todo-img {
   height: 100%;
+  width: 100%;
+  object-fit: contain;
 }
 .login-buttons {
   width: 100%;
-  margin-top: 5%;
+  margin-top: 10px;
 }
 .has-icon .form-control {
   padding-left: 2.375rem;
