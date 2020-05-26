@@ -4,6 +4,8 @@
 
 Kanbant's motto is to make Kanban simple again, so you won't see any complicated pages anymore, just your tasks, and that's it.
 
+## [Demo](https://kanbant.herokuapp.com/login)
+
 |  Creating a task | Dragging a task  |
 | ------------- | ------------- |
 |<img src="readme-files/task-creating.gif" width="400"/>   | <img src="readme-files/task-dragging.gif" width="400"/>  |
