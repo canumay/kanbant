@@ -136,6 +136,7 @@ export default {
                   showConfirmButton: false,
                   timer: 1500
                 });
+                eventBus.$emit("project-deleted");
               } else {
                 this.$swal({
                   position: "bottom-end",
@@ -146,7 +147,7 @@ export default {
                   timer: 1500
                 });
               }
-              eventBus.$emit("load-project"); // loads random projecs
+              eventBus.$emit("load-project");
             })
             .catch(err => {
               if (err.response.status === 401) {

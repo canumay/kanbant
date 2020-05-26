@@ -599,6 +599,9 @@ export default {
         console.log("Column context menu not initialized yet");
       }
     });
+    eventBus.$on("project-deleted", () => {
+      this.getProjects();
+    })
     eventBus.$on("load-project", () => {
       this.loadProject(this.projects.selected._id); // load project again.
     });
