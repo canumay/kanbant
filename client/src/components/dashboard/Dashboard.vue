@@ -601,7 +601,7 @@ export default {
     });
     eventBus.$on("project-deleted", () => {
       this.getProjects();
-    })
+    });
     eventBus.$on("load-project", () => {
       this.loadProject(this.projects.selected._id); // load project again.
     });
@@ -625,7 +625,9 @@ export default {
   min-height: 50vh;
 }
 .widget-img img {
-  max-height: 150px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .task {
   display: flex;
