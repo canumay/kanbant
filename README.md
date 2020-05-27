@@ -24,6 +24,14 @@ Kanbant's motto is to make Kanban simple again, so you won't see any complicated
 <img src="readme-files/customization.png" width="800"/>
 <img src="readme-files/dark-mode.png" width="800"/>
 
+## Roadmap:
+
+ * [x] Suitable for personal use
+ * [ ] Login with social media accounts
+ * [ ] App Notifications
+ * [ ] Mail Notifications
+ * [ ] Suitable for team use (task assignment, privileges etc.)
+ * [ ] Slack integration
 
 ## Development setup
 
