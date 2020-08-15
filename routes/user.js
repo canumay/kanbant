@@ -11,30 +11,32 @@ const limitations = require('../limitations');
 // Create Projects
 router.post('/projects', isLoggedIn, async (req, res, next) => {
     try {
-        let project = new Project(req.body); // Create project instance
-        await project.joiValidate(req.body);  // Wait for validation
-        if (req.user.projects.length >= limitations.PROJECT_COUNT_PER_USER) {
+        let project = new Project({ createdBy: req.user._id, accessibleBy: [req.user._id], ...req.body }); // Create project instance
+        await project.joiValidate();  // Wait for validation
+        let projectCount = await Project.find({ createdBy: req.user._id }).count();
+        if (projectCount >= limitations.PROJECT_COUNT_PER_USER) {
             res.status(429).json({ status: false, message: `Due to limitations users cannot create more than ${limitations.PROJECT_COUNT_PER_USER} projects.` })
         } else {
-            project = await project.save(req.body); // Save project to database
-            await User.findByIdAndUpdate(req.user._id, { "$push": { "projects": project._id } }, { "new": true, "upsert": true }); // Save project to user on database
-            // TODO: After project is created, automatically create "To-Do", "In-Progress", "Done" columns.
-            let todo = await new Column({ "title": "To-Do", "icon": "todo", "project_id": project._id }).save();
-            let inprogress = await new Column({ "title": "In Progress", "icon": "inprogress", "project_id": project._id }).save();
-            let done = await new Column({ "title": "Done", "icon": "done", "project_id": project._id }).save();
-            await Project.findByIdAndUpdate(project._id, { "$push": { "columns": [todo._id, inprogress._id, done._id] } }, { "upsert": true }); // Add column to project on database
+            createdProject = await project.save(); // Save project to database
+            let todo = await new Column({ "title": "To-Do", "icon": "todo", "project": createdProject._id }).save();
+            let inprogress = await new Column({ "title": "In Progress", "icon": "inprogress", "project": createdProject._id }).save();
+            let done = await new Column({ "title": "Done", "icon": "done", "project": createdProject._id }).save();
             let example_task = await new Task({
                 "title": "Example Task",
                 "label": "feature",
                 "labelType": "info",
-                "expireAt": new Date()
+                "expireAt": new Date(),
+                "column": todo._id
             }).save();
-            await Column.findByIdAndUpdate(todo._id, { "$push": { "tasks": [example_task._id] } }, { "upsert": true });
             res.status(200).json({ status: true, message: 'Project successfully created.' });
         }
 
     } catch (err) {
-        res.status(500).json({ status: false, message: err });
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -43,26 +45,25 @@ router.get('/projects', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.project_id) { // If user specified project id
             if (mongoose.Types.ObjectId.isValid(req.query.project_id)) { // Check project id is valid
-                let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.query.project_id) });
-                if (isProjectAccessibleByUser === true) {
-                    let project = await Project.findById(req.query.project_id, { __v: 0 }).populate({ path: 'columns', populate: { path: 'tasks', model: 'Task' } }).exec(); // Get project and populate columns
-                    if (project === null) { // If project not found, throw error
-                        res.status(404).json({ status: false, message: "Project is not exists." });
-                    } else { // If project found, send it
-                        res.status(200).json({ status: true, result: project });
-                    }
+                let project = await Project.findOne({ _id: req.query.project_id, accessibleBy: { "$in": req.user._id } });
+                if (project !== null) {
+                    res.status(200).json({ status: true, result: project });
                 } else {
-                    res.status(403).json({ status: false, message: "Can't access that project." });
+                    res.status(404).json({ status: false, message: "Project is not accessible or not found." });
                 }
             } else { // If project is malformed
                 res.status(400).json({ status: false, message: "project_id is malformed." });
             }
         } else { // If user didn't specified any project id
-            let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns', populate: { path: 'tasks', model: 'Task' } } }).exec();
-            res.status(200).json({ status: true, results: projects['projects'] });
+            let projects = await Project.find({ accessibleBy: { "$in": req.user._id } });
+            res.status(200).json({ status: true, results: projects });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -71,27 +72,25 @@ router.delete('/projects', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.project_id) { // Check user specified project id
             if (mongoose.Types.ObjectId.isValid(req.query.project_id)) { // Check project id is valid
-                let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.query.project_id) });
-                if (isProjectAccessibleByUser === true) {
-                    // Delete project's columns
-                    let columns = await Project.findById(req.query.project_id, { columns: 1, _id: 0 });
-                    columns['columns'].forEach(async column_id => {
-                        // Delete column's tasks.
-                        let tasks = await Column.findById(column_id, { tasks: 1, _id: 0 });
-                        tasks['tasks'].forEach(async task_id => {
-                            await Task.findByIdAndDelete(task_id);
-                        });
-                        await Column.findByIdAndDelete(column_id);
-                    });
+                let isProjectAccessibleByUser = await Project.findOne({ createdBy: req.user._id, _id: req.query.project_id });
+                if (isProjectAccessibleByUser !== null) {
+                    // Delete tasks
+                    let columnsToDelete = await Column.find({ project: req.query.project_id });
+                    columnsToDelete.forEach(async column => {
+                        deletedTasks = await Task.deleteMany({ column: column._id });
+                    })
+                    // Delete columns
+                    let deletedColumns = await Column.deleteMany({ project: req.query.project_id });
+
+                    // Delete Project
                     let deletedProject = await Project.deleteOne({ _id: req.query.project_id });
                     if (deletedProject.deletedCount && deletedProject.deletedCount > 0) {
-                        await User.findByIdAndUpdate(req.user._id, { "$pull": { "projects": req.query.project_id } }, { "new": true, "upsert": true });
-                        res.status(200).json({ status: true, result: deletedProject });
+                        res.status(200).json({ status: true, message: "Project successfully deleted." });
                     } else {
                         res.status(500).json({ status: true, result: "Error occurred during delete operation" });
                     }
                 } else {
-                    res.status(403).json({ status: false, message: "Can't access that project." });
+                    res.status(403).json({ status: false, message: "You don't have permissions to delete this project." });
                 }
             } else { // If project is malformed
                 res.status(400).json({ status: false, message: "project_id is malformed." });
@@ -100,7 +99,11 @@ router.delete('/projects', isLoggedIn, async (req, res, next) => {
             res.status(400).json({ status: false, message: "project_id is required." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -109,26 +112,13 @@ router.put('/projects', isLoggedIn, async (req, res, next) => {
     try {
         if (req.body.project_id) { // Check user specified project id
             if (mongoose.Types.ObjectId.isValid(req.body.project_id)) { // Check project id is valid
-                let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.body.project_id) });
-                if (isProjectAccessibleByUser === true) {
-                    let project = new Project(req.body);
-                    await project.joiValidate();
-                    let user = User.findById(req.user._id); // Check user exists (not necessary because middleware already checked but its more safer.)
-                    if (user === null) { // If user not exists
-                        req.logout(); // Terminates session for security.
-                    } else { // If user exists
-                        let project = await Project.findById(req.body.project_id); // Check project exists or not
-                        if (project === null) { // If project is not exists.
-                            res.status(404).json({ status: false, message: "Project is not exists." });
-                        } else { // If project exists
-                            project = await Project.findByIdAndUpdate(req.body.project_id, { $set: req.body }, { new: true });
-                            res.status(200).json({ status: true, message: 'Project successfully updated.' });
-                        }
-                    }
+                await new Project(req.body).joiValidate();
+                let editedProject = await Project.findOneAndUpdate({ createdBy: req.user._id, _id: req.body.project_id }, { $set: req.body }, { new: true });
+                if (editedProject !== null) {
+                    res.status(200).json({ status: true, message: editedProject });
                 } else {
-                    res.status(403).json({ status: false, message: "Can't access that project." });
+                    res.status(400).json({ status: false, message: "Project not found or you don't have permission to edit the project." })
                 }
-
             } else { // If project is malformed
                 res.status(400).json({ status: false, message: "project_id is malformed." });
             }
@@ -136,7 +126,45 @@ router.put('/projects', isLoggedIn, async (req, res, next) => {
             res.status(400).json({ status: false, message: "project_id is required." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
+    }
+});
+
+// Get Columns
+router.get('/columns', isLoggedIn, async (req, res, next) => {
+    try {
+        if (req.query.project_id) {
+            if (mongoose.Types.ObjectId.isValid(req.query.project_id)) {
+                let columns = await Column.find({ project: req.query.project_id }).populate('project').exec();
+                if (Array.isArray(columns) && columns.length > 0) {
+                    let areColumnsAccessibleByUser = false;
+                    columns.forEach(column => {
+                        areColumnsAccessibleByUser = column['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    })
+                    if (areColumnsAccessibleByUser === true) {
+                        res.status(200).json({ status: true, result: columns });
+                    } else {
+                        res.status(500).json({ status: false, message: "Columns cannot accessible by user." })
+                    }
+                } else {
+                    res.status(404).json({ status: false, message: "Columns are not found." });
+                }
+            } else {
+                res.status(400).json({ status: false, message: "project_id is malformed." });
+            }
+        } else {
+            res.status(400).json({ status: false, message: "Please speficify a project_id." });
+        }
+    } catch (err) {
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -144,30 +172,29 @@ router.put('/projects', isLoggedIn, async (req, res, next) => {
 router.post('/columns', isLoggedIn, async (req, res, next) => {
     try {
         if (req.body.project_id && mongoose.Types.ObjectId.isValid(req.body.project_id)) {
-            let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.body.project_id) });
-            if (isProjectAccessibleByUser === true) {
-                let column = new Column(req.body); // Create column instance
-                await column.joiValidate(req.body); // Wait for validation
-                let project = await Project.findById(req.body.project_id); // Check project exists or not
-                if (project === null) { // If project is not exists.
-                    res.status(404).json({ status: false, message: "Project is not exists." });
-                } else { // If project exists
-                    if (project.columns.length >= limitations.COLUMN_COUNT_PER_PROJECT) {
-                        res.status(429).json({ status: false, message: `Due to limitations projects cannot contains more than ${limitations.COLUMN_COUNT_PER_PROJECT} columns.` })
-                    } else {
-                        column = await column.save(req.body); // Save column to database
-                        await Project.findByIdAndUpdate(req.body.project_id, { "$push": { "columns": column._id } }, { "upsert": true }); // Add column to project on database
-                        res.status(200).json({ status: true, message: 'Column successfully created.' });
-                    }
+            let isProjectAccessibleByUser = await Project.findOne({ accessibleBy: req.user._id, _id: req.body.project_id });
+            if (isProjectAccessibleByUser !== null) {
+                let column = new Column({ project: req.body.project_id, ...req.body }); // Create column instance
+                await column.joiValidate(); // Wait for validation
+                let existColumns = await Column.find({ project: req.body.project_id }).count();
+                if (existColumns >= limitations.COLUMN_COUNT_PER_PROJECT) {
+                    res.status(429).json({ status: false, message: `Due to limitations projects cannot contains more than ${limitations.COLUMN_COUNT_PER_PROJECT} columns.` })
+                } else {
+                    column = await column.save(req.body); // Save column to database
+                    res.status(200).json({ status: true, message: 'Column successfully created.' });
                 }
             } else {
-                res.status(403).json({ status: false, message: "Can't mutate that project." });
+                res.status(403).json({ status: false, message: "Project not found or you don't have permission to create column." });
             }
         } else {
             res.status(400).json({ status: false, message: "project_id is undefined or malformed." }); // Project id is undefined or malformed
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, message: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message }); // If any error occurs
+        }
     }
 });
 
@@ -176,20 +203,23 @@ router.put('/columns', isLoggedIn, async (req, res, next) => {
     try {
         if (req.body.column_id) { // Check user specified column id
             if (mongoose.Types.ObjectId.isValid(req.body.column_id)) { // Check column id is valid
-                let column = new Column(req.body);
-                await column.joiValidate();
-                let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                let isColumnAccessibleByUser = false;
-                projects['projects'].forEach(project => {
-                    isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.body.column_id) });
-                })
-                if (isColumnAccessibleByUser === true) {
-                    column = await Column.findByIdAndUpdate(req.body.column_id, { $set: req.body }, { new: true });
-                    res.status(200).json({ status: true, message: 'Column successfully updated.' });
+                await new Column(req.body).joiValidate();
+                let column = await Column.findOne({ _id: req.body.column_id }).populate('project').exec();
+                if (column !== null) {
+                    let isColumnAccessibleByUser = column['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    if (isColumnAccessibleByUser === true) {
+                        let editedColumn = await Column.updateOne({ _id: req.body.column_id }, { $set: req.body })
+                        if (editedColumn.nModified > 0) {
+                            res.status(200).json({ status: true, message: "Column successfully updated." })
+                        } else {
+                            res.status(500).json({ status: false, message: "Error occurred updating the column." })
+                        }
+                    } else {
+                        res.status(403).json({ status: false, message: "Column not accessible by user." })
+                    }
                 } else {
-                    res.status(403).json({ status: false, message: "Column not exists or cannot be mutated" });
+                    res.status(404).json({ status: false, message: "Column not found." })
                 }
-
             } else { // If column id is malformed
                 res.status(400).json({ status: false, message: "column_id is malformed." });
             }
@@ -197,90 +227,81 @@ router.put('/columns', isLoggedIn, async (req, res, next) => {
             res.status(400).json({ status: false, message: "column_id is required." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
 // Delete Column
 router.delete('/columns', isLoggedIn, async (req, res, next) => {
     try {
-        if (req.query.column_id) { // Check user specified task id
-            if (req.query.project_id) {
-                if (mongoose.Types.ObjectId.isValid(req.query.column_id)) { // Check task id is valid
-                    if (mongoose.Types.ObjectId.isValid(req.query.project_id)) {
-                        let isProjectAccessibleByUser = req.user.projects.some(project => { return project.equals(req.query.project_id) });
-                        if (isProjectAccessibleByUser === true) {
-                            let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                            let isColumnAccessibleByUser = false;
-                            projects['projects'].forEach(project => {
-                                isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.query.column_id) });
-                            })
-                            if (isColumnAccessibleByUser === true) {
-                                // Delete column's tasks.
-                                let tasks = await Column.findById(req.query.column_id, { tasks: 1, _id: 0 });
-                                tasks['tasks'].forEach(async task_id => {
-                                    await Task.findByIdAndDelete(task_id);
-                                });
-                                let deletedColumn = await Column.deleteOne({ _id: req.query.column_id });
-                                if (deletedColumn.deletedCount && deletedColumn.deletedCount > 0) {
-                                    await Project.findByIdAndUpdate(req.query.project_id, { "$pull": { "columns": req.query.column_id } }, { "new": true, "upsert": true });
-                                    res.status(200).json({ status: true, result: deletedColumn });
-                                } else {
-                                    res.status(500).json({ status: true, result: "Error occurred during delete operation" });
-                                }
-                            } else {
-                                res.status(403).json({ status: false, message: "Can't mutate that column and its objects." });
-                            }
-                        }
-                        else {
-                            res.status(403).json({ status: false, message: "Can't mutate that project and its objects." });
+        if (req.query.column_id) { // Check user specified column id
+            if (mongoose.Types.ObjectId.isValid(req.query.column_id)) { // Check column id is valid
+                let column = await Column.findOne({ _id: req.query.column_id }).populate('project').exec();
+                if (column !== null) {
+                    let isColumnAccessibleByUser = column['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    if (isColumnAccessibleByUser === true) {
+                        let deletedColumn = await Column.deleteOne({ _id: req.query.column_id })
+                        if (deletedColumn.deletedCount > 0) {
+                            res.status(200).json({ status: true, message: "Column successfully deleted." })
+                        } else {
+                            res.status(500).json({ status: false, message: "Error occurred deleting the column." })
                         }
                     } else {
-                        res.status(400).json({ status: false, message: "project_id is malformed." });
+                        res.status(403).json({ status: false, message: "Column not accessible by user." })
                     }
-                } else { // If task is malformed
-                    res.status(400).json({ status: false, message: "column_id is malformed." });
+                } else {
+                    res.status(404).json({ status: false, message: "Column not found." })
                 }
-            } else {
-                res.status(400).json({ status: false, message: "project_id is required." });
+            } else { // If column id is malformed
+                res.status(400).json({ status: false, message: "column_id is malformed." });
             }
-        } else { // If user didn't specified any task id
+        } else { // If user didn't specified any column id
             res.status(400).json({ status: false, message: "column_id is required." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
-// Get Columns
-router.get('/columns', isLoggedIn, async (req, res, next) => {
+// Get Tasks
+router.get('/tasks', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.column_id) {
             if (mongoose.Types.ObjectId.isValid(req.query.column_id)) {
-                let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                let isColumnAccessibleByUser = false;
-                projects['projects'].forEach(project => {
-                    isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.query.column_id) });
-                })
-                if (isColumnAccessibleByUser === true) {
-                    let column = await Column.findById(req.query.column_id, { __v: 0 }).populate('tasks').exec();
-                    if (column === null) {
-                        res.status(404).json({ status: false, message: "Column is not exists." });
+                let tasks = await Task.find({ column: req.query.column_id }).populate({ path: 'column', populate: { path: 'project' } }).exec();
+                if (Array.isArray(tasks) && tasks.length > 0) {
+                    let areTasksAccessibleByUser = false;
+                    tasks.forEach(task => {
+                        areTasksAccessibleByUser = task['column']['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    })
+                    if (areTasksAccessibleByUser === true) {
+                        res.status(200).json({ status: true, result: tasks });
                     } else {
-                        res.status(200).json({ status: true, result: column });
+                        res.status(500).json({ status: false, message: "Tasks cannot accessible by user." })
                     }
                 } else {
-                    res.status(403).json({ status: false, message: "Can't access that column." });
+                    res.status(404).json({ status: false, message: "Tasks are not found." });
                 }
             } else {
                 res.status(400).json({ status: false, message: "column_id is malformed." });
             }
         } else {
-            // TODO: Return user's all column, not required yet. Implement later.
             res.status(400).json({ status: false, message: "Please speficify a column_id." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -288,26 +309,29 @@ router.get('/columns', isLoggedIn, async (req, res, next) => {
 router.post('/tasks', isLoggedIn, async (req, res, next) => {
     try {
         if (req.body.column_id && mongoose.Types.ObjectId.isValid(req.body.column_id)) {
-            let task = new Task(req.body);
-            await task.joiValidate(req.body);
-            let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-            let isColumnAccessibleByUser = false;
-            projects['projects'].forEach(project => {
-                isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.body.column_id) });
-            })
-            if (isColumnAccessibleByUser === true) {
-                task = await task.save(req.body);
-                await Column.findByIdAndUpdate(req.body.column_id, { "$push": { "tasks": task._id } }, { "new": true, "upsert": true });
-                res.status(200).json({ status: true, message: 'Task successfully created.' });
+            let task = new Task({ column: req.body.column_id, ...req.body });
+            await task.joiValidate();
+            let column = await Column.findOne({ _id: req.body.column_id }).populate('project').exec();
+            if (column !== null) {
+                isColumnAccessibleByUser = column['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                if (isColumnAccessibleByUser === true) {
+                    await task.save();
+                    res.status(200).json({ status: true, message: "Task successfully created." })
+                } else {
+                    res.status(403).json({ status: false, message: "Column not accessible by user." })
+                }
             } else {
-                res.status(403).json({ status: false, message: "Column not exists or cannot be mutated" });
+                res.status(404).json({ status: false, message: 'Column not found.' })
             }
-
         } else {
             res.status(400).json({ status: false, message: "column_id is undefined or malformed." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
 
@@ -315,112 +339,74 @@ router.post('/tasks', isLoggedIn, async (req, res, next) => {
 router.delete('/tasks', isLoggedIn, async (req, res, next) => {
     try {
         if (req.query.task_id) { // Check user specified task id
-            if (req.query.column_id) {
-                if (mongoose.Types.ObjectId.isValid(req.query.task_id)) { // Check task id is valid
-                    if (mongoose.Types.ObjectId.isValid(req.query.column_id)) {
-                        let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                        let isColumnAccessibleByUser = false;
-                        projects['projects'].forEach(project => {
-                            isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.query.column_id) });
-                        })
-                        if (isColumnAccessibleByUser === true) {
-                            let tasks = await Column.findById(req.query.column_id, { tasks: 1, _id: 0 });
-                            let isTaskAccessibleByUser = tasks['tasks'].some(task => { return task.equals(req.query.task_id) });
-                            if (isTaskAccessibleByUser === true) {
-                                let deletedTask = await Task.deleteOne({ _id: req.query.task_id });
-                                if (deletedTask.deletedCount && deletedTask.deletedCount > 0) {
-                                    await Column.findByIdAndUpdate(req.query.column_id, { "$pull": { "tasks": req.query.task_id } }, { "new": true, "upsert": true });
-                                    res.status(200).json({ status: true, result: deletedTask });
-                                } else {
-                                    res.status(500).json({ status: true, result: "Error occurred during delete operation" });
-                                }
-                            } else {
-                                res.status(403).json({ status: false, message: "Task not exists or cannot be mutated" });
-                            }
+            if (mongoose.Types.ObjectId.isValid(req.query.task_id)) { // Check task id is valid
+                let task = await Task.findOne({ _id: req.query.task_id }).populate({ path: 'column', populate: { path: 'project' } }).exec();
+                if (task !== null) {
+                    let isTaskAccessibleByUser = task['column']['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    if (isTaskAccessibleByUser === true) {
+                        let deletedTask = await Task.deleteOne({ _id: req.query.task_id })
+                        if (deletedTask.deletedCount > 0) {
+                            res.status(200).json({ status: true, message: "Task successfully deleted." })
                         } else {
-                            res.status(403).json({ status: false, message: "Column not exists or cannot be mutated" });
+                            res.status(500).json({ status: false, message: "Error occurred deleting the task." })
                         }
                     } else {
-                        res.status(400).json({ status: false, message: "column_id is malformed." });
+                        res.status(403).json({ status: false, message: "Task not accessible by user." })
                     }
-                } else { // If task is malformed
-                    res.status(400).json({ status: false, message: "task_id is malformed." });
+                } else {
+                    res.status(404).json({ status: false, message: "Task not found." })
                 }
-            } else {
-                res.status(400).json({ status: false, message: "column_id is required." });
+            } else { // If task is malformed
+                res.status(400).json({ status: false, message: "task_id is malformed." });
+            }
+
+        } else { // If user didn't specified any task id
+            res.status(400).json({ status: false, message: "task_id is required." });
+        }
+    } catch (err) {
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
+    }
+});
+
+// Update Task
+router.put('/tasks', isLoggedIn, async (req, res, next) => {
+    try {
+        if (req.body.task_id) { // Check user specified task id
+            if (mongoose.Types.ObjectId.isValid(req.body.task_id)) { // Check task id is valid
+                await new Task(req.body).joiValidate();
+                let task = await Task.findOne({ _id: req.body.task_id }).populate({ path: 'column', populate: { path: 'project' } }).exec();
+                if (task !== null) {
+                    let isTaskAccessibleByUser = task['column']['project']['accessibleBy'].some(id => id.equals(req.user._id));
+                    if (isTaskAccessibleByUser === true) {
+                        let editedTask = await Task.updateOne({ _id: req.body.task_id }, { $set: req.body })
+                        if (editedTask.nModified > 0) {
+                            res.status(200).json({ status: true, message: "Task successfully updated." })
+                        } else {
+                            res.status(500).json({ status: false, message: "Error occurred updating the task." })
+                        }
+                    } else {
+                        res.status(403).json({ status: false, message: "Task not accessible by user." })
+                    }
+                } else {
+                    res.status(404).json({ status: false, message: "Task not found." })
+                }
+            } else { // If task id is malformed
+                res.status(400).json({ status: false, message: "task_id is malformed." });
             }
         } else { // If user didn't specified any task id
             res.status(400).json({ status: false, message: "task_id is required." });
         }
     } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
+        if (err.isJoi) {
+            res.status(400).json({ status: false, error: err.details[0].message })
+        } else {
+            res.status(500).json({ status: false, message: err.message });
+        }
     }
 });
-
-// Remove existing task from column
-router.post('/removeFromColumn', isLoggedIn, async (req, res, next) => {
-    try {
-        let { column_id, task_id } = req.body;
-        if (column_id && mongoose.Types.ObjectId.isValid(column_id)) {
-            if (task_id && mongoose.Types.ObjectId.isValid(task_id)) {
-                let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                let isColumnAccessibleByUser = false;
-                projects['projects'].forEach(project => {
-                    isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.body.column_id) });
-                })
-                if (isColumnAccessibleByUser === true) {
-                    let tasks = await Column.findById(req.body.column_id, { tasks: 1, _id: 0 });
-                    let isTaskAccessibleByUser = tasks['tasks'].some(task => { return task.equals(req.body.task_id) });
-                    if (isTaskAccessibleByUser === true) {
-                        await Column.findByIdAndUpdate(column_id, { "$pull": { "tasks": task_id } }, { "new": true, "upsert": true });
-                        res.status(200).json({ status: true, message: 'Task successfully removed from specified column.' })
-                    }
-                    else {
-                        res.status(403).json({ status: false, message: "Task not exists or cannot be mutated" });
-                    }
-                }
-                else {
-                    res.status(403).json({ status: false, message: "Column not exists or cannot be mutated" });
-                }
-            } else {
-                res.status(400).json({ status: false, message: 'task_id is not specified or malformed' })
-            }
-        } else {
-            res.status(400).json({ status: false, message: 'column_id is not specified or malformed' })
-        }
-    } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
-    }
-})
-
-// Add existing task to column
-router.post('/addToColumn', isLoggedIn, async (req, res, next) => {
-    try {
-        let { column_id, task_id } = req.body;
-        if (column_id && mongoose.Types.ObjectId.isValid(column_id)) {
-            if (task_id && mongoose.Types.ObjectId.isValid(task_id)) {
-                let projects = await User.findById(req.user._id, { projects: 1, _id: 0 }).populate({ path: 'projects', populate: { path: 'columns' } }).exec();
-                let isColumnAccessibleByUser = false;
-                projects['projects'].forEach(project => {
-                    isColumnAccessibleByUser = project['columns'].some(column => { return column.equals(req.body.column_id) });
-                })
-                if (isColumnAccessibleByUser === true) {
-                    await Column.findByIdAndUpdate(column_id, { "$push": { "tasks": task_id } }, { "new": true, "upsert": true });
-                    res.status(200).json({ status: true, message: 'Task successfully added to specified column.' })
-                }
-                else {
-                    res.status(403).json({ status: false, message: "Column not exists or cannot be mutated" });
-                }
-            } else {
-                res.status(400).json({ status: false, message: 'task_id is not specified or malformed' })
-            }
-        } else {
-            res.status(400).json({ status: false, message: 'column_id is not specified or malformed' })
-        }
-    } catch (err) {
-        res.status(500).json({ status: false, message: err }); // If any error occurs
-    }
-})
-
 
 module.exports = router;

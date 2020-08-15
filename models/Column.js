@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const timestamps = require('mongoose-timestamp');
 const Joi = require('joi');
+Joi.objectId = require('joi-objectid')(Joi)
 
-var ColumnSchema = new mongoose.Schema({
+let ColumnSchema = new mongoose.Schema({
     title: { type: String, required: true },
     icon: {
         type: String, enum: [
@@ -20,7 +21,7 @@ var ColumnSchema = new mongoose.Schema({
             "design-notes"
         ], required: true
     },
-    tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }]
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' }
 });
 
 // Auto Timestamp for createdAt, updatedAt
@@ -41,11 +42,11 @@ ColumnSchema.methods.joiValidate = (obj) => {
             "survey",
             "report",
             "design-notes").required(),
-        project_id: Joi.string()
+        project: Joi.objectId().required()
     })
     return Joi.validate(obj, columnSchema);
 }
 
-var Column = mongoose.model('Column', ColumnSchema);
+let Column = mongoose.model('Column', ColumnSchema);
 
 exports.Column = Column;

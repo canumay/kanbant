@@ -40,7 +40,7 @@
 
       <!-- Column Task Size -->
       <template>
-        <span class="mb-2" style="display:block;">({{column.tasks.length}})</span>
+        <span class="mb-2" style="display:block;">({{tasks.length}})</span>
       </template>
       <!-- End Of Column Task Size -->
 
@@ -69,7 +69,7 @@
 
     <!-- Column Body -->
     <template>
-      <Task :tasks="column.tasks" :column_id="column._id" :customization="customization" />
+      <Task :tasks="tasks" :column_id="column._id" :customization="customization" />
     </template>
     <!-- End Of Column Body -->
 
@@ -160,10 +160,11 @@ import Task from "./Task";
 export default {
   props: ["customization", "column"],
   components: {
-    Task
+    Task,
   },
   data() {
     return {
+      tasks: [],
       available_icons: [
         "todo",
         "inprogress",
@@ -176,11 +177,11 @@ export default {
         "code-review",
         "survey",
         "report",
-        "design-notes"
+        "design-notes",
       ],
       edit_component: {
         id_for_title: "",
-        id_for_icon: null
+        id_for_icon: null,
       },
       new_task: {
         title: "",
@@ -188,8 +189,8 @@ export default {
         labelType: null,
         expireAt: null,
         column_id: null,
-        isLabeled: false
-      }
+        isLabeled: false,
+      },
     };
   },
   computed: {
@@ -234,9 +235,23 @@ export default {
         return "border-top: 1px solid rgba(255, 255, 255, 0.21)";
       }
       return "";
-    }
+    },
   },
   methods: {
+    loadTasks() {
+      this.$http
+        .get("/user/tasks", { params: { column_id: this.column._id } })
+        .then((res) => {
+          if (res.data.status && res.data.status === true) {
+            this.tasks = res.data.result;
+          }
+        })
+        .catch((err) => {
+          if (err.response.status === 404) {
+            this.tasks = [];
+          }
+        });
+    },
     createNewTask() {
       let {
         title,
@@ -244,7 +259,7 @@ export default {
         labelType,
         expireAt,
         column_id,
-        isLabeled
+        isLabeled,
       } = this.new_task;
       let data = { title, column_id };
       if (column_id !== null) {
@@ -262,7 +277,7 @@ export default {
         }
         this.$http
           .post("/user/tasks", data)
-          .then(res => {
+          .then((res) => {
             if (res.data.status === true) {
               this.$swal({
                 position: "bottom-end",
@@ -270,7 +285,7 @@ export default {
                 toast: true,
                 title: "Task successfully created",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             } else {
               this.$swal({
@@ -279,13 +294,13 @@ export default {
                 toast: true,
                 title: "Error occurred creating the task",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             }
             eventBus.$emit("load-project"); // load project again.
             this.resetNewTask();
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             } else if (err.response.status === 429) {
@@ -295,7 +310,7 @@ export default {
                 toast: true,
                 title: `${err.response.data.message}`,
                 showConfirmButton: false,
-                timer: 2000
+                timer: 2000,
               });
             }
           });
@@ -310,7 +325,7 @@ export default {
         labelType: null,
         expireAt: null,
         column_id: null,
-        isLabeled: false
+        isLabeled: false,
       };
     },
     columnHandle(event, item) {
@@ -323,7 +338,7 @@ export default {
       this.edit_component.id_for_title = null;
       this.$http
         .put("/user/columns", { column_id, title })
-        .then(res => {
+        .then((res) => {
           if (res.data.status === true) {
             this.$swal({
               position: "bottom-end",
@@ -331,7 +346,7 @@ export default {
               toast: true,
               title: "Column title updated",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           } else {
             this.$swal({
@@ -340,11 +355,11 @@ export default {
               toast: true,
               title: "Error occurred updating column title",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           }
         })
-        .catch(err => {
+        .catch((err) => {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
@@ -376,7 +391,7 @@ export default {
 
       this.$http
         .put("/user/columns", { column_id, icon })
-        .then(res => {
+        .then((res) => {
           if (res.data.status === true) {
             this.$swal({
               position: "bottom-end",
@@ -384,7 +399,7 @@ export default {
               toast: true,
               title: "Column icon successfully updated",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           } else {
             this.$swal({
@@ -393,17 +408,23 @@ export default {
               toast: true,
               title: "Error occurred updating column icon",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           }
           eventBus.$emit("load-project"); // load project again.
         })
-        .catch(err => {
+        .catch((err) => {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
         });
-    }
-  }
+    },
+  },
+  created() {
+    setTimeout(this.loadTasks, 100);
+    eventBus.$on("load-tasks", () => {
+      this.loadTasks();
+    });
+  },
 };
 </script>

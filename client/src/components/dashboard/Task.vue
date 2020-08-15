@@ -48,7 +48,7 @@ import draggable from "vuedraggable";
 export default {
   props: ["tasks", "column_id", "customization"],
   components: {
-    draggable
+    draggable,
   },
   computed: {
     getTaskCustomization() {
@@ -56,7 +56,7 @@ export default {
         return "bg-dark text-white";
       }
       return "";
-    }
+    },
   },
   methods: {
     getTaskHeight(element) {
@@ -70,35 +70,40 @@ export default {
       eventBus.$emit("task-option-handled", { event, item });
     },
 
-    changed: function(column_id, evt) {
+    changed: function (column_id, evt) {
       if (evt.added) {
+        console.log(evt.added.element);
         let task_id = evt.added.element._id;
         this.$http
-          .post("/user/addToColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
+          .put("/user/tasks", { task_id, column: column_id })
+          .then((res) => {
+            if (res.data.status && res.data.status === true) {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: "Task successfully updated.",
+                showConfirmButton: false,
+                timer: 1500,
+              });
+            } else {
+              this.$swal({
+                position: "bottom-end",
+                icon: "success",
+                toast: true,
+                title: res.data.message,
+                showConfirmButton: false,
+                timer: 1500,
+              });
+            }
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
           });
-      } else if (evt.removed) {
-        let task_id = evt.removed.element._id;
-        this.$http
-          .post("/user/removeFromColumn", { task_id, column_id })
-          .then(res => {
-            console.log(res.data);
-          })
-          .catch(err => {
-            if (err.response.status === 401) {
-              this.$router.push("/login");
-            }
-          });
-      } else {
-        console.log("Unknown process.");
       }
-    }
-  }
+    },
+  },
 };
 </script>

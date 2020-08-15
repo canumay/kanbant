@@ -21,11 +21,7 @@
           <b-container style="max-width: none !important;">
             <b-row>
               <div class="d-flex">
-                <b-col
-                  class="col kanban-widget"
-                  v-for="(column, index) in project_details.columns"
-                  :key="index"
-                >
+                <b-col class="col kanban-widget" v-for="(column, index) in columns" :key="index">
                   <!-- Column -->
                   <Column :customization="customization" :column="column" />
                   <!-- End of Column -->
@@ -91,57 +87,63 @@ export default {
     Sidebar,
     ProjectSelection,
     Column,
-    PerfectScrollbar
+    PerfectScrollbar,
     // VueContentLoading
   },
   watch: {
+    "projects.selected": {
+      handler(val) {
+        this.loadColumns(val._id);
+      },
+      deep: true,
+    },
     "customization.theme.selected": {
-      handler: val => {
+      handler: (val) => {
         localStorage.theme = val;
       },
-      deep: true
+      deep: true,
     },
     "customization.background.selected": {
-      handler: val => {
+      handler: (val) => {
         localStorage.bg = val;
       },
-      deep: true
+      deep: true,
     },
     "customization.icons.selected": {
-      handler: val => {
+      handler: (val) => {
         localStorage.icons = val;
       },
-      deep: true
+      deep: true,
     },
     "customization.animations.selected": {
-      handler: val => {
+      handler: (val) => {
         localStorage.animations = val;
       },
-      deep: true
-    }
+      deep: true,
+    },
   },
   data() {
     return {
+      columns: [],
       projects: {
         selected: {},
-        options: []
+        options: [],
       },
       loaded: false,
-      project_details: { title: "", description: "", columns: [] },
       options: [
         {
           name: "Clone",
-          slug: "clone"
+          slug: "clone",
         },
         {
           name: "Delete",
-          slug: "delete"
-        }
+          slug: "delete",
+        },
       ],
       customization: {
         theme: {
           selected: "Light",
-          options: ["Dark", "Light"]
+          options: ["Dark", "Light"],
         },
         background: {
           selected: "Mountain",
@@ -153,20 +155,20 @@ export default {
             "Mountain",
             "City",
             "Seaside",
-            "Northen Lights"
-          ]
+            "Northen Lights",
+          ],
         },
         icons: {
           selected: false,
           options: [
             { text: "Yes", value: true },
-            { text: "No", value: false }
-          ]
+            { text: "No", value: false },
+          ],
         },
         animations: {
           selected: "bounce",
-          options: ["fade", "slide-fade", "bounce"]
-        }
+          options: ["fade", "slide-fade", "bounce"],
+        },
       },
       user_email: "",
       available_icons: [
@@ -181,8 +183,8 @@ export default {
         "code-review",
         "survey",
         "report",
-        "design-notes"
-      ]
+        "design-notes",
+      ],
     };
   },
   computed: {
@@ -205,7 +207,7 @@ export default {
         default:
           return "background-image: url('https://picsum.photos/0/0');background-size: cover !important;";
       }
-    }
+    },
   },
   methods: {
     checkLocalStorage() {
@@ -240,9 +242,13 @@ export default {
       if (event.option.slug === "delete") {
         this.$http
           .delete("/user/tasks", {
-            params: { task_id: event.item._id, column_id: event.item.column_id }
+            params: {
+              task_id: event.item._id,
+              column_id: event.item.column_id,
+            },
           })
-          .then(res => {
+          .then((res) => {
+            this.loadColumns(this.projects.selected._id); // load project again.
             if (res.data.status === true) {
               this.$swal({
                 position: "bottom-end",
@@ -250,7 +256,7 @@ export default {
                 toast: true,
                 title: "Task successfully deleted",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             } else {
               this.$swal({
@@ -259,12 +265,11 @@ export default {
                 toast: true,
                 title: "Error occurred deleting the task",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             }
-            this.loadProject(this.projects.selected._id); // load project again.
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
@@ -277,9 +282,10 @@ export default {
             expireAt,
             label,
             labelType,
-            column_id
+            column_id,
           })
-          .then(res => {
+          .then((res) => {
+            this.loadColumns(this.projects.selected._id); // load project again.
             if (res.data.status === true) {
               this.$swal({
                 position: "bottom-end",
@@ -287,7 +293,7 @@ export default {
                 toast: true,
                 title: "Task successfully cloned",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             } else {
               this.$swal({
@@ -296,12 +302,11 @@ export default {
                 toast: true,
                 title: "Error occurred cloning the task",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             }
-            this.loadProject(this.projects.selected._id); // load project again.
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             } else if (err.response.status === 429) {
@@ -311,7 +316,7 @@ export default {
                 toast: true,
                 title: `${err.response.data.message}`,
                 showConfirmButton: false,
-                timer: 2000
+                timer: 2000,
               });
             }
           });
@@ -327,13 +332,9 @@ export default {
           icon: this.available_icons[
             this.getRandomInt(this.available_icons.length)
           ],
-          title:
-            "Column " +
-            Math.random()
-              .toString()
-              .slice(2, 5)
+          title: "Column " + Math.random().toString().slice(2, 5),
         })
-        .then(res => {
+        .then((res) => {
           if (res.data.status === true) {
             this.$swal({
               position: "bottom-end",
@@ -341,7 +342,7 @@ export default {
               toast: true,
               title: "Column successfully created",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           } else {
             this.$swal({
@@ -350,12 +351,12 @@ export default {
               toast: true,
               title: "Error occurred creating the column",
               showConfirmButton: false,
-              timer: 1500
+              timer: 1500,
             });
           }
-          this.loadProject(this.projects.selected._id);
+          this.loadColumns(this.projects.selected._id);
         })
-        .catch(err => {
+        .catch((err) => {
           if (err.response.status === 401) {
             this.$router.push("/login");
           } else if (err.response.status === 429) {
@@ -365,7 +366,7 @@ export default {
               toast: true,
               title: `${err.response.data.message}`,
               showConfirmButton: false,
-              timer: 2000
+              timer: 2000,
             });
           } else {
             this.$swal({
@@ -374,7 +375,7 @@ export default {
               toast: true,
               title: "Error occurred creating the column",
               showConfirmButton: false,
-              timer: 500
+              timer: 500,
             });
           }
         });
@@ -386,10 +387,10 @@ export default {
           .delete("/user/columns", {
             params: {
               column_id: event.item._id,
-              project_id: this.projects.selected._id
-            }
+              project_id: this.projects.selected._id,
+            },
           })
-          .then(res => {
+          .then((res) => {
             if (res.data.status === true) {
               this.$swal({
                 position: "bottom-end",
@@ -397,7 +398,7 @@ export default {
                 toast: true,
                 title: "Column successfully deleted",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             } else {
               this.$swal({
@@ -406,12 +407,12 @@ export default {
                 toast: true,
                 title: "Error occurred deleting the column",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             }
-            this.loadProject(this.projects.selected._id); // load project again.
+            this.loadColumns(this.projects.selected._id); // load project again.
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             }
@@ -422,9 +423,9 @@ export default {
           .post("/user/columns", {
             title,
             icon,
-            project_id: this.projects.selected._id
+            project_id: this.projects.selected._id,
           })
-          .then(res => {
+          .then((res) => {
             if (res.data.status === true) {
               this.$swal({
                 position: "bottom-end",
@@ -432,7 +433,7 @@ export default {
                 toast: true,
                 title: "Column successfully cloned",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             } else {
               this.$swal({
@@ -441,12 +442,12 @@ export default {
                 toast: true,
                 title: "Error occurred cloning the column",
                 showConfirmButton: false,
-                timer: 1500
+                timer: 1500,
               });
             }
-            this.loadProject(this.projects.selected._id); // load project again.
+            this.loadColumns(this.projects.selected._id); // load project again.
           })
-          .catch(err => {
+          .catch((err) => {
             if (err.response.status === 401) {
               this.$router.push("/login");
             } else if (err.response.status === 429) {
@@ -456,7 +457,7 @@ export default {
                 toast: true,
                 title: `${err.response.data.message}`,
                 showConfirmButton: false,
-                timer: 2000
+                timer: 2000,
               });
             }
           });
@@ -470,18 +471,14 @@ export default {
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, create it!"
-      }).then(result => {
+        confirmButtonText: "Yes, create it!",
+      }).then((result) => {
         if (result.value) {
           this.$http
             .post("/user/projects", {
-              title:
-                "Project " +
-                Math.random()
-                  .toString()
-                  .slice(2, 7)
+              title: "Project " + Math.random().toString().slice(2, 7),
             })
-            .then(res => {
+            .then((res) => {
               if (res.data.status === true) {
                 this.$swal({
                   position: "bottom-end",
@@ -489,7 +486,7 @@ export default {
                   toast: true,
                   title: "Project successfully created",
                   showConfirmButton: false,
-                  timer: 1500
+                  timer: 1500,
                 });
               } else {
                 this.$swal({
@@ -498,12 +495,12 @@ export default {
                   toast: true,
                   title: "Error occurred creating the project",
                   showConfirmButton: false,
-                  timer: 1500
+                  timer: 1500,
                 });
               }
               this.getProjects();
             })
-            .catch(err => {
+            .catch((err) => {
               if (err.response.status === 401) {
                 this.$router.push("/login");
               } else if (err.response.status === 429) {
@@ -513,7 +510,7 @@ export default {
                   toast: true,
                   title: `${err.response.data.message}`,
                   showConfirmButton: false,
-                  timer: 2000
+                  timer: 2000,
                 });
               } else {
                 this.$swal({
@@ -522,7 +519,7 @@ export default {
                   toast: true,
                   title: "Error occurred creating the project",
                   showConfirmButton: false,
-                  timer: 2000
+                  timer: 2000,
                 });
               }
             });
@@ -530,30 +527,29 @@ export default {
       });
     },
     getProjects() {
-      this.$http.get("/user/projects").then(res => {
+      this.$http.get("/user/projects").then((res) => {
         if (res.data.status && res.data.status === true) {
           this.projects.selected = {};
           this.projects.options = res.data.results;
           if (this.projects.options.length > 0) {
             this.projects.selected = res.data.results[0];
-            this.loadProject(res.data.results[0]._id);
           }
         } else {
           console.log("error occurred fetching projects.");
         }
       });
     },
-    loadProject(project_id) {
+    loadColumns(project_id) {
       // this.loaded = false; TODO: Deprecated for now.
       this.$http
-        .get("/user/projects", {
-          params: { project_id }
+        .get("/user/columns", {
+          params: { project_id },
         })
-        .then(response => {
-          this.project_details = response.data.result;
+        .then((response) => {
+          this.columns = response.data.result;
           this.loaded = true;
         })
-        .catch(err => {
+        .catch((err) => {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
@@ -565,12 +561,12 @@ export default {
     loadUserInformations() {
       this.$http
         .get("/auth/status")
-        .then(res => {
+        .then((res) => {
           if (res.data.status === true) {
             this.user_email = res.data.user;
           }
         })
-        .catch(err => {
+        .catch((err) => {
           if (err.response.status === 401) {
             this.$router.push("/login");
           }
@@ -578,21 +574,21 @@ export default {
             this.getProjects();
           }
         });
-    }
+    },
   },
   created() {
     this.checkLocalStorage();
     this.loadUserInformations();
     this.getProjects();
 
-    eventBus.$on("task-option-handled", data => {
+    eventBus.$on("task-option-handled", (data) => {
       try {
         this.$refs.vueTaskContextMenu.showMenu(data.event, data.item);
       } catch (e) {
         console.log("Task context menu not initialized yet");
       }
     });
-    eventBus.$on("column-option-handled", data => {
+    eventBus.$on("column-option-handled", (data) => {
       try {
         this.$refs.vueColumnContextMenu.showMenu(data.event, data.item);
       } catch (e) {
@@ -603,15 +599,15 @@ export default {
       this.getProjects();
     });
     eventBus.$on("load-project", () => {
-      this.loadProject(this.projects.selected._id); // load project again.
+      this.loadColumns(this.projects.selected._id); // load project again.
     });
-    eventBus.$on("load-project-with-id", id => {
-      this.loadProject(id); // load project with id
+    eventBus.$on("load-project-with-id", (id) => {
+      this.loadColumns(id); // load project with id
     });
     eventBus.$on("create-project", () => {
       this.createProject();
     });
-  }
+  },
 };
 </script>
 <style src="vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css"/>
