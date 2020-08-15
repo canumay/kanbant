@@ -9,6 +9,7 @@ const cors = require('cors')
 const history = require('connect-history-api-fallback');
 require('dotenv').config()
 var config = require('./config');
+const MongoStore = require('connect-mongo')(session);
 
 var app = express();
 
@@ -24,8 +25,9 @@ app.use(cors({
 }));
 app.use(session({
     secret: 'kanbantReallySecretKey',
-    resave: false,
-    saveUninitialized: true
+    store: new MongoStore({ mongooseConnection: mongoose.connection, ttl: 1 * 6 * 60 * 60 }), // session expires after 6 hours
+    // resave: false,
+    // saveUninitialized: true
 }))
 
 // Passport Setup
